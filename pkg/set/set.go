@@ -2,6 +2,10 @@ package set
 
 type Set[T comparable] map[T]struct{}
 
+func New[T comparable]() Set[T] {
+	return Set[T]{}
+}
+
 func (s Set[T]) Add(element T) {
 	s[element] = struct{}{}
 }
@@ -17,4 +21,8 @@ func (s Set[T]) Contains(element T) bool {
 
 func (s Set[T]) Size() int {
 	return len(s)
+}
+
+func (s Set[T]) Empty() bool {
+	return len(s) == 0
 }

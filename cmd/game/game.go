@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -25,6 +26,7 @@ type Game struct {
 
 	WindowWidth  int32
 	WindowHeight int32
+	registry     ecs.Registry
 
 	millisecondsPreviousFrame uint32
 }
@@ -118,7 +120,7 @@ func (g *Game) Update() {
 	dt := float32(sdl.GetTicks()-g.millisecondsPreviousFrame) / 1000.0
 	g.millisecondsPreviousFrame = sdl.GetTicks()
 
-    foo(dt)
+	foo(dt)
 }
 
 func (g *Game) Render() {
@@ -147,5 +149,5 @@ func (g *Game) Destroy() {
 }
 
 func foo(dt float32) {
-    // TODO
+	// TODO
 }

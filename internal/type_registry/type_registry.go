@@ -19,7 +19,7 @@ type TypeRegistry struct {
 	mu       sync.Mutex
 }
 
-func NewTypeRegistry(maxItems int) *TypeRegistry {
+func New(maxItems int) *TypeRegistry {
 	return &TypeRegistry{
 		maxItems: maxItems,
 		nextID:   0,

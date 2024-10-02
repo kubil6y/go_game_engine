@@ -1,11 +1,12 @@
 package type_registry
 
 import (
+	"sync"
 	"testing"
 )
 
 func TestNewTypeRegistry(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	if reg.maxItems != 5 {
 		t.Errorf("Expected maxItems to be 5, got %d", reg.maxItems)
 	}
@@ -20,7 +21,7 @@ func TestNewTypeRegistry(t *testing.T) {
 func TestSizeTypeRegistry(t *testing.T) {
 	type foo struct{}
 	type bar struct{}
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	reg.Register(foo{})
 	reg.Register(bar{})
 	reg.Register(foo{})
@@ -31,7 +32,7 @@ func TestSizeTypeRegistry(t *testing.T) {
 }
 
 func TestRegisterNilItem(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	_, err := reg.Register(nil)
 	if err != ErrNilItem {
 		t.Errorf("Expected ErrNilItem, got %v", err)
@@ -39,7 +40,7 @@ func TestRegisterNilItem(t *testing.T) {
 }
 
 func TestRegisterExceedingMaxItems(t *testing.T) {
-	reg := NewTypeRegistry(1) // Only allow one item
+	reg := New(1)
 	_, err := reg.Register("first")
 	if err != nil {
 		t.Fatalf("Unexpected error during first registration: %v", err)
@@ -51,7 +52,7 @@ func TestRegisterExceedingMaxItems(t *testing.T) {
 }
 
 func TestRegisterSameItem(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	id1, err := reg.Register("item")
 	if err != nil {
 		t.Fatalf("Unexpected error during registration: %v", err)
@@ -66,7 +67,7 @@ func TestRegisterSameItem(t *testing.T) {
 }
 
 func TestGetRegisteredItem(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	_, err := reg.Register("item")
 	if err != nil {
 		t.Fatalf("Unexpected error during registration: %v", err)
@@ -82,7 +83,7 @@ func TestGetRegisteredItem(t *testing.T) {
 }
 
 func TestGetNilItem(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	_, err := reg.Get(nil)
 	if err != ErrNilItem {
 		t.Errorf("Expected ErrNilItem, got %v", err)
@@ -90,7 +91,7 @@ func TestGetNilItem(t *testing.T) {
 }
 
 func TestGetUnregisteredItem(t *testing.T) {
-	reg := NewTypeRegistry(5)
+	reg := New(5)
 	_, err := reg.Get("item")
 	if err != ErrTypeNotFound {
 		t.Errorf("Expected ErrTypeNotFound, got %v", err)
@@ -98,34 +99,31 @@ func TestGetUnregisteredItem(t *testing.T) {
 }
 
 func TestConcurrentRegister(t *testing.T) {
-	reg := NewTypeRegistry(10)
-	done := make(chan struct{})
+	reg := New(10)
+	var wg sync.WaitGroup
 
+	wg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func(i int) {
-			defer func() { done <- struct{}{} }()
-			_, err := reg.Register(i) // Registering an int
+			defer wg.Done()
+			_, err := reg.Register(i)
 			if err != nil && err != ErrMaxItemsExceeded {
 				t.Errorf("Unexpected error during concurrent registration: %v", err)
 			}
 		}(i)
 	}
-
-	// Wait for all goroutines to finish
-	for i := 0; i < 10; i++ {
-		<-done
-	}
+	wg.Wait()
 }
 
 func TestConcurrentGet(t *testing.T) {
-	reg := NewTypeRegistry(10)
-	_, _ = reg.Register("item") // Registering an item
+	reg := New(10)
+	_, _ = reg.Register("item")
+	var wg sync.WaitGroup
 
-	done := make(chan struct{})
-
+	wg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func() {
-			defer func() { done <- struct{}{} }()
+			defer wg.Done()
 			id, err := reg.Get("item")
 			if err != nil {
 				t.Errorf("Unexpected error during concurrent get: %v", err)
@@ -135,9 +133,5 @@ func TestConcurrentGet(t *testing.T) {
 			}
 		}()
 	}
-
-	// Wait for all goroutines to finish
-	for i := 0; i < 10; i++ {
-		<-done
-	}
+	wg.Wait()
 }
