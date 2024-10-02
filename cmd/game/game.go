@@ -35,12 +35,9 @@ type Game struct {
 func NewGame() *Game {
 	logger := logger.New(logger.WithLogLevel(logger.LevelDebug))
 	return &Game{
-		debug:                     false,
-		running:                   false,
-		WindowWidth:               WIDTH,
-		WindowHeight:              HEIGHT,
-		millisecondsPreviousFrame: 0,
-		logger:                    logger,
+		WindowWidth:  WIDTH,
+		WindowHeight: HEIGHT,
+		logger:       logger,
 	}
 }
 

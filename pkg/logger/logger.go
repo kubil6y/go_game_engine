@@ -93,13 +93,13 @@ func (l *Logger) Info(message string, properties map[string]any) {
 }
 
 func (l *Logger) Error(err error, message string, properties map[string]any) {
-	wrappedError := fmt.Errorf("%s: %w", message, err)
-	l.print(LevelError, wrappedError.Error(), properties)
+	wrapped := fmt.Errorf("%s: %w", message, err)
+	l.print(LevelError, wrapped.Error(), properties)
 }
 
 func (l *Logger) Fatal(err error, message string, properties map[string]any) {
-	wrappedError := fmt.Errorf("%s: %w", message, err)
-	l.print(LevelFatal, wrappedError.Error(), properties)
+	wrapped := fmt.Errorf("%s: %w", message, err)
+	l.print(LevelFatal, wrapped.Error(), properties)
 }
 
 func (l *Logger) print(level LogLevel, message string, properties map[string]any) {
@@ -107,12 +107,8 @@ func (l *Logger) print(level LogLevel, message string, properties map[string]any
 		return
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	logMessage := fmt.Sprintf("%s[%s] %s: %s%s", getLevelColor(level), level.String(), time.Now().Format(time.RFC3339), message, Reset)
 
-	// If you want to add properties
 	if properties != nil {
 		logMessage += " | Properties: " + fmt.Sprintf("%+v", properties)
 	}
@@ -121,5 +117,7 @@ func (l *Logger) print(level LogLevel, message string, properties map[string]any
 		logMessage += "\n" + string(debug.Stack())
 	}
 
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	fmt.Fprintln(l.out, logMessage)
 }
