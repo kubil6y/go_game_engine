@@ -8,15 +8,12 @@ import (
 )
 
 const (
-	TITLE     = "README"
-	WIDTH     = 800
-	HEIGHT    = 600
-	FRAMERATE = 60
-)
+	TITLE  = "README"
+	WIDTH  = 800
+	HEIGHT = 600
+	FPS    = 60
 
-var (
-	playerX, playerY   = int32(WIDTH / 2), int32(HEIGHT / 2)
-	playerVX, playerVY = int32(0), int32(0)
+	MILLISECONDS_PER_FRAME = 1000 / FPS
 )
 
 type Game struct {
@@ -29,7 +26,7 @@ type Game struct {
 	WindowWidth  int32
 	WindowHeight int32
 
-	millisecondsPreviousFrame uint64 // check type
+	millisecondsPreviousFrame uint32
 }
 
 func NewGame() *Game {
@@ -108,29 +105,20 @@ func (g *Game) ProcessInput() {
 					break
 				}
 			}
-			if t.State == sdl.RELEASED {
-				if t.Keysym.Sym == sdl.K_LEFT {
-					playerVX -= 1
-				} else if t.Keysym.Sym == sdl.K_RIGHT {
-					playerVX += 1
-				}
-				if t.Keysym.Sym == sdl.K_UP {
-					playerVY -= 1
-				} else if t.Keysym.Sym == sdl.K_DOWN {
-					playerVY += 1
-				}
-			}
 			break
 		}
 	}
 }
 
 func (g *Game) Update() {
-	// loopTime := loop(surface)
-	// window.UpdateSurface()
+	waitDuration := MILLISECONDS_PER_FRAME - (sdl.GetTicks() - g.millisecondsPreviousFrame)
+	if waitDuration > 0 && waitDuration <= MILLISECONDS_PER_FRAME {
+		sdl.Delay(waitDuration)
+	}
+	dt := float32(sdl.GetTicks()-g.millisecondsPreviousFrame) / 1000.0
+	g.millisecondsPreviousFrame = sdl.GetTicks()
 
-	// delay := (1000 / FRAMERATE) - loopTime
-	// sdl.Delay(delay)
+    foo(dt)
 }
 
 func (g *Game) Render() {
@@ -156,4 +144,8 @@ func (g *Game) Destroy() {
 	g.renderer.Destroy()
 	g.window.Destroy()
 	sdl.Quit()
+}
+
+func foo(dt float32) {
+    // TODO
 }
