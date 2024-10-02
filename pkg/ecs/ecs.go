@@ -72,12 +72,12 @@ func (r *Registry) CreateEntity() Entity {
 	}
 	entity := NewEntity(entityID)
 	r.entitiesToBeAdded.Add(entity)
-	r.logger.Info(fmt.Sprintf("entity created with id = %d\n", entityID), nil)
+	r.logger.Info(fmt.Sprintf("Entity created with id = %d", entityID), nil)
 	return entity
 }
 
 func (r *Registry) KillEntity(entity Entity) {
-	r.logger.Info(fmt.Sprintf("entity killed with id = %d\n", entity.GetID()), nil)
+	r.logger.Info(fmt.Sprintf("Entity killed with id = %d", entity.GetID()), nil)
 	r.entitiesToBeKilled.Add(entity)
 }
 
@@ -112,6 +112,6 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 		*componentPool = utils.ResizeArray(*componentPool, newSize)
 	}
 	(*componentPool)[entityID] = component
-	r.logger.Info(fmt.Sprintf("component registered with id: %d\n", componentID), nil)
+	r.logger.Info(fmt.Sprintf("%s registered with id: %d", component, componentID), nil)
 	return nil
 }

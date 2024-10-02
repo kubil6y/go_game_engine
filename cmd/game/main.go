@@ -10,13 +10,4 @@ func main() {
 	}
 	defer game.Destroy()
 	game.Run()
-
-	// type a struct{}
-	// type b struct{}
-	// registry := ecs.NewRegistry()
-	// registry.AddComponent(a{})
-	// registry.AddComponent(a{})
-	// registry.AddComponent(a{})
-	// registry.AddComponent(a{})
-	// registry.AddComponent(b{})
 }

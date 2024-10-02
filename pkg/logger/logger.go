@@ -107,7 +107,7 @@ func (l *Logger) print(level LogLevel, message string, properties map[string]any
 		return
 	}
 
-	logMessage := fmt.Sprintf("%s[%s] %s: %s%s", getLevelColor(level), level.String(), time.Now().Format(time.RFC3339), message, Reset)
+	logMessage := fmt.Sprintf("%s[%s]\t%s: %s%s", getLevelColor(level), level.String(), time.Now().Format(time.RFC3339), message, Reset)
 
 	if properties != nil {
 		logMessage += " | Properties: " + fmt.Sprintf("%+v", properties)
