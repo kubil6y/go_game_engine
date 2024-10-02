@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +31,29 @@ func (l LogLevel) String() string {
 		return "FATAL"
 	default:
 		panic("Invalid log level")
+	}
+}
+
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+)
+
+func getLevelColor(level LogLevel) string {
+	switch level {
+	case LevelDebug:
+		return Green
+	case LevelInfo:
+		return Blue
+	case LevelError:
+		return Red
+	case LevelFatal:
+		return Red
+	default:
+		return Reset
 	}
 }
 
@@ -80,33 +102,24 @@ func (l *Logger) Fatal(err error, message string, properties map[string]any) {
 	l.print(LevelFatal, wrappedError.Error(), properties)
 }
 
-func (l *Logger) print(level LogLevel, message string, properties map[string]any) (int, error) {
+func (l *Logger) print(level LogLevel, message string, properties map[string]any) {
 	if level < l.minLevel {
-		return 0, nil
+		return
 	}
 
-	aux := struct {
-		Level      string         `json:"level"`
-		Time       string         `json:"time"`
-		Message    string         `json:"message"`
-		Properties map[string]any `json:"properties,omitempty"`
-		Trace      string         `json:"trace,omitempty"`
-	}{
-		Level:      level.String(),
-		Time:       time.Now().UTC().Format(time.RFC3339),
-		Message:    message,
-		Properties: properties,
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	logMessage := fmt.Sprintf("%s[%s] %s: %s%s", getLevelColor(level), level.String(), time.Now().Format(time.RFC3339), message, Reset)
+
+	// If you want to add properties
+	if properties != nil {
+		logMessage += " | Properties: " + fmt.Sprintf("%+v", properties)
 	}
 
 	if level >= LevelError {
-		aux.Trace = string(debug.Stack())
+		logMessage += "\n" + string(debug.Stack())
 	}
-	var line []byte
-	line, err := json.Marshal(aux)
-	if err != nil {
-		line = []byte(LevelError.String() + ": unable to marshal log message:" + err.Error())
-	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return l.out.Write(append(line, '\n'))
+
+	fmt.Fprintln(l.out, logMessage)
 }

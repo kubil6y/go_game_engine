@@ -46,7 +46,6 @@ func NewGame() *Game {
 
 func (g *Game) Initialize() error {
 	g.logger.Debug("game initialize called", nil)
-
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		g.logger.Fatal(err, "failed to initialize sdl", nil)
 		return err
