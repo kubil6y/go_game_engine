@@ -1,12 +1,15 @@
 [x] Makefile
 [x] bitset
 [x] framerate setup
-[ ] ecs
-[ ] asset manager
+[x] ecs
+[x] asset manager
 [ ] eventbus
 
 ## ECS
 
 [x] systems have a signature, they should be managed by registry i should not have to add and remove them
-[ ] refactor debug messages make them easy to read
-[ ] set is bottleneck
+[x] refactor debug messages make them easy to read
+[x] set is bottleneck
+[x] asset manager
+[ ] render map
+[ ] create eventbus
