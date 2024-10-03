@@ -100,6 +100,7 @@ func (l *Logger) Error(err error, message string, properties map[string]any) {
 func (l *Logger) Fatal(err error, message string, properties map[string]any) {
 	wrapped := fmt.Errorf("%s: %w", message, err)
 	l.print(LevelFatal, wrapped.Error(), properties)
+    os.Exit(1)
 }
 
 func (l *Logger) print(level LogLevel, message string, properties map[string]any) {

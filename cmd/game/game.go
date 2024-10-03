@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
+	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 	"github.com/veandco/go-sdl2/sdl"
@@ -18,11 +19,12 @@ const (
 )
 
 type Game struct {
-	debug    bool
-	running  bool
-	window   *sdl.Window
-	renderer *sdl.Renderer
-	logger   *logger.Logger
+	debug      bool
+	running    bool
+	window     *sdl.Window
+	renderer   *sdl.Renderer
+	logger     *logger.Logger
+	assetStore *asset_store.AssetStore
 
 	WindowWidth  int32
 	WindowHeight int32
@@ -38,6 +40,7 @@ func NewGame() *Game {
 		WindowHeight: HEIGHT,
 		logger:       logger,
 		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger, componentTypeRegistry, systemTypeRegistry),
+		assetStore:   asset_store.New(),
 	}
 }
 
@@ -82,9 +85,11 @@ func (g *Game) Setup() {
 }
 
 func (g *Game) LoadLevel() {
+    if err := g.LoadAssets(); err != nil {
+        g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
+    }
 	// NOTE: all the components must be registered beforehand to entities
 	// before they are consumed by systems.
-
 	tank := g.registry.CreateEntity()
 	tank2 := g.registry.CreateEntity()
 
@@ -171,9 +176,16 @@ func (g *Game) Render() {
 	}
 
 	// Draw the triangle
-	if err := g.renderer.DrawLines(points); err != nil {
-		log.Fatal(err)
+	g.renderer.DrawLines(points)
+
+	renderRect := sdl.Rect{
+		X: 500,
+		Y: 300,
+		W: 32,
+		H: 32,
 	}
+	g.renderer.CopyEx(g.assetStore.GetTexture(IMG_Chopper), nil, &renderRect, 0, nil, sdl.FLIP_NONE)
+
 	g.renderer.Present()
 }
 

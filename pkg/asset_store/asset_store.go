@@ -33,9 +33,8 @@ func (s *AssetStore) AddTexture(renderer *sdl.Renderer, assetID AssetID, filepat
 	return nil
 }
 
-func (s *AssetStore) GetTexture(assetID AssetID) (*sdl.Texture, bool) {
-	texture, exists := s.textures[assetID]
-	return texture, exists
+func (s *AssetStore) GetTexture(assetID AssetID) *sdl.Texture {
+	return s.textures[assetID]
 }
 
 func (s *AssetStore) GetOrLoadTexture(renderer *sdl.Renderer, assetID AssetID, filepath string) (*sdl.Texture, error) {
@@ -51,8 +50,8 @@ func (s *AssetStore) GetOrLoadTexture(renderer *sdl.Renderer, assetID AssetID, f
 }
 
 func (s *AssetStore) Clear() {
-    for assetID, texture := range s.textures {
-        texture.Destroy()
-        delete(s.textures, assetID)
-    }
+	for assetID, texture := range s.textures {
+		texture.Destroy()
+		delete(s.textures, assetID)
+	}
 }
