@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 	"github.com/veandco/go-sdl2/sdl"
 )
-
-// NOTE: Components must be added first then they can be accessed through systems
 
 const (
 	TITLE  = "README"
@@ -45,7 +42,7 @@ func NewGame() *Game {
 }
 
 func (g *Game) Initialize() error {
-	g.logger.Debug("game initialize called", nil)
+	g.logger.Debug("Game Initialize called", nil)
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		g.logger.Fatal(err, "failed to initialize sdl", nil)
 		return err
@@ -85,6 +82,9 @@ func (g *Game) Setup() {
 }
 
 func (g *Game) LoadLevel() {
+	// NOTE: all the components must be registered beforehand to entities
+	// before they are consumed by systems.
+
 	tank := g.registry.CreateEntity()
 	tank2 := g.registry.CreateEntity()
 
@@ -96,22 +96,21 @@ func (g *Game) LoadLevel() {
 		Y: 20,
 	})
 
-	g.registry.AddComponent(tank2, SpriteComponent{
-		Name: "tank-sprite",
-	})
+	// g.registry.AddComponent(tank2, SpriteComponent{
+	// 	Name: "tank-sprite",
+	// })
 	g.registry.AddComponent(tank2, BoxColliderComponent{
 		X: 10,
 		Y: 20,
 	})
 
-    printSystem := NewPrintSystem(g.logger, &g.registry)
-    anotherSystem := NewAnotherSystem(g.logger, &g.registry)
+	// Create systems
+	printSystem := NewPrintSystem(g.logger, &g.registry)
+	anotherSystem := NewAnotherSystem(g.logger, &g.registry)
 
+	// Register system
 	g.registry.AddSystem(printSystem)
 	g.registry.AddSystem(anotherSystem)
-
-    printSystem.AddEntityToSystem(tank)
-    printSystem.AddEntityToSystem(tank2)
 }
 
 func (g *Game) Run() {
@@ -152,13 +151,11 @@ func (g *Game) Update() {
 	dt := float32(sdl.GetTicks()-g.millisecondsPreviousFrame) / 1000.0
 	g.millisecondsPreviousFrame = sdl.GetTicks()
 
+	g.registry.Update()
+
 	printSystemID, _ := systemTypeRegistry.Get(&PrintSystem{})
-	printSystem, ok := g.registry.GetSystem(printSystemID).(*PrintSystem)
-    if ok {
-        printSystem.Update(dt)
-    } else {
-        fmt.Println("not ok")
-    }
+	printSystem := g.registry.GetSystem(printSystemID).(*PrintSystem)
+	printSystem.Update(dt)
 }
 
 func (g *Game) Render() {

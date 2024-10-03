@@ -12,22 +12,22 @@ type ISystem interface {
 	AddEntityToSystem(entity Entity)
 	RemoveEntityFromSystem(entity Entity)
 	GetSystemEntities() []Entity
-	GetSignature() bitset.Bitset32
+	GetSignature() *bitset.Bitset32
 	RequireComponent(componentID int)
 }
 
 type System struct {
 	Name               string
-	componentSignature bitset.Bitset32
+	componentSignature *bitset.Bitset32
 	entities           []Entity
 	Logger             *logger.Logger
 	Registry           *Registry
 }
 
-func NewSystem(name string, logger *logger.Logger, registry *Registry) System {
+func NewSystem(name string, logger *logger.Logger, registry *Registry, bitset *bitset.Bitset32) System {
 	return System{
-        Name: name,
-		componentSignature: *bitset.NewBitset32(),
+		Name:               name,
+		componentSignature: bitset,
 		entities:           make([]Entity, 0),
 		Logger:             logger,
 		Registry:           registry,
@@ -36,7 +36,7 @@ func NewSystem(name string, logger *logger.Logger, registry *Registry) System {
 
 func (s *System) AddEntityToSystem(entity Entity) {
 	s.entities = append(s.entities, entity)
-	s.Logger.Debug(fmt.Sprintf("entity id %d added to system %s", entity.GetID(), s.Name), nil)
+	s.Logger.Debug(fmt.Sprintf("Entity id = %d added to %s", entity.GetID(), s.Name), nil)
 }
 
 func (s *System) RemoveEntityFromSystem(entity Entity) {
@@ -56,7 +56,7 @@ func (s *System) GetSystemEntities() []Entity {
 	return s.entities
 }
 
-func (s *System) GetSignature() bitset.Bitset32 {
+func (s *System) GetSignature() *bitset.Bitset32 {
 	return s.componentSignature
 }
 

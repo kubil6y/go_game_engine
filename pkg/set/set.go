@@ -19,10 +19,28 @@ func (s Set[T]) Contains(element T) bool {
 	return exists
 }
 
+func (s Set[T]) Clear() {
+    for k := range s {
+        delete(s, k)
+    }
+}
+
 func (s Set[T]) Size() int {
 	return len(s)
 }
 
 func (s Set[T]) Empty() bool {
 	return len(s) == 0
+}
+
+// Experimenting...
+func (s Set[T]) Iter() <-chan T {
+    output := make(chan T)
+    go func() {
+        defer close(output)
+        for v := range s {
+            output <- v
+        }
+    }()
+    return output
 }

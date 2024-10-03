@@ -31,7 +31,7 @@ func (e Entity) GetID() int {
 type Registry struct {
 	numEntities int
 	// [index = entity id]
-	entityComponentSignatures []*bitset.Bitset32
+	entityComponentSignatures []bitset.Bitset32
 	// [index = component id] [index = entity id]
 	componentPools        []*[]Component
 	systems               map[int]ISystem
@@ -46,7 +46,7 @@ type Registry struct {
 func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegistry *type_registry.TypeRegistry, systemTypeRegistry *type_registry.TypeRegistry) *Registry {
 	return &Registry{
 		numEntities:               0,
-		entityComponentSignatures: make([]*bitset.Bitset32, 10),
+		entityComponentSignatures: make([]bitset.Bitset32, 10),
 		componentPools:            make([]*[]Component, 10),
 		systems:                   make(map[int]ISystem),
 		entitiesToBeAdded:         set.New[Entity](),
@@ -71,7 +71,7 @@ func (r *Registry) CreateEntity() Entity {
 		if entityID >= len(r.entityComponentSignatures) {
 			utils.ResizeArray(r.entityComponentSignatures, entityID+1)
 			for i := len(r.entityComponentSignatures); i <= entityID; i++ {
-				r.entityComponentSignatures[i] = bitset.NewBitset32()
+				r.entityComponentSignatures[i] = *bitset.NewBitset32()
 			}
 		}
 	} else {
@@ -81,12 +81,12 @@ func (r *Registry) CreateEntity() Entity {
 	}
 	entity := NewEntity(entityID)
 	r.entitiesToBeAdded.Add(entity)
-	r.logger.Info(fmt.Sprintf("Entity created with id = %d", entityID), nil)
+	r.logger.Debug(fmt.Sprintf("Entity created with id = %d", entityID), nil)
 	return entity
 }
 
 func (r *Registry) KillEntity(entity Entity) {
-	r.logger.Info(fmt.Sprintf("Entity killed with id = %d", entity.GetID()), nil)
+	r.logger.Debug(fmt.Sprintf("Entity killed with id = %d", entity.GetID()), nil)
 	r.entitiesToBeKilled.Add(entity)
 }
 
@@ -121,7 +121,9 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 		*componentPool = utils.ResizeArray(*componentPool, newSize)
 	}
 	(*componentPool)[entityID] = component
-	r.logger.Info(fmt.Sprintf("%s registered with id: %d", component, componentID), nil)
+
+	r.entityComponentSignatures[entityID].Set(componentID)
+	r.logger.Debug(fmt.Sprintf("%s component id = %d registered to entity id = %d", component, componentID, entityID), nil)
 	return nil
 }
 
@@ -145,8 +147,6 @@ func (r *Registry) GetComponent(entity Entity, component Component) Component {
 func (r *Registry) AddSystem(system ISystem) {
 	systemID, err := r.systemTypeRegistry.Register(system)
 
-	fmt.Printf("%s systemID: %d from addsystem in ecs\n", system.GetName(), systemID) // TODO remove
-
 	if err != nil {
 		r.logger.Error(err, fmt.Sprintf("could not register system: %s", system.GetName()), nil)
 	}
@@ -154,6 +154,7 @@ func (r *Registry) AddSystem(system ISystem) {
 	_, exists := r.systems[systemID]
 	if !exists {
 		r.systems[systemID] = system
+		r.logger.Debug(fmt.Sprintf("%s with systemID: %d registered", system.GetName(), systemID), nil)
 	}
 }
 
@@ -173,4 +174,32 @@ func (r *Registry) GetSystem(systemID int) ISystem {
 func (r *Registry) HasSystem(systemID int) bool {
 	_, exists := r.systems[systemID]
 	return exists
+}
+
+func (r *Registry) Update() {
+	for entity := range r.entitiesToBeAdded.Iter() {
+		r.AddEntityToSystems(entity)
+	}
+	r.entitiesToBeAdded.Clear()
+
+	for entity := range r.entitiesToBeKilled.Iter() {
+		fmt.Printf("entitiesToBeKilled id from iter: %d\n", entity.GetID())
+	}
+	r.entitiesToBeKilled.Clear()
+}
+
+func (r *Registry) AddEntityToSystems(entity Entity) {
+	entitySignature := r.entityComponentSignatures[entity.GetID()]
+	for _, system := range r.systems {
+		if (entitySignature.Get32() & system.GetSignature().Get32()) == system.GetSignature().Get32() {
+			system.AddEntityToSystem(entity)
+		}
+	}
+}
+
+func (r *Registry) RemoveEntityFromSystems(entity Entity) {
+	for _, system := range r.systems {
+		system.RemoveEntityFromSystem(entity)
+		r.logger.Debug(fmt.Sprintf("entity id = %d is removed from system: %s", entity.GetID(), system.GetName()), nil)
+	}
 }

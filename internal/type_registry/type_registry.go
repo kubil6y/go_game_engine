@@ -68,3 +68,17 @@ func (r *TypeRegistry) Get(item any) (int, error) {
 	}
 	return itemTypeID, nil
 }
+
+func (r *TypeRegistry) Getx(item any) int {
+	if item == nil {
+		return -1
+	}
+	itemType := reflect.TypeOf(item)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	itemTypeID, exists := r.typeIDs[itemType]
+	if !exists {
+		return -1
+	}
+	return itemTypeID
+}
