@@ -8,7 +8,6 @@ import (
 	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
-	"github.com/kubil6y/go_game_engine/pkg/set"
 )
 
 type Entity struct {
@@ -35,8 +34,8 @@ type Registry struct {
 	// [index = component id] [index = entity id]
 	componentPools        []*[]Component
 	systems               map[int]ISystem
-	entitiesToBeAdded     set.Set[Entity]
-	entitiesToBeKilled    set.Set[Entity]
+	entitiesToBeAdded     []Entity
+	entitiesToBeKilled    []Entity
 	freeIDs               *list.List
 	logger                *logger.Logger
 	componentTypeRegistry *type_registry.TypeRegistry
@@ -49,8 +48,8 @@ func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegi
 		entityComponentSignatures: make([]bitset.Bitset32, 10),
 		componentPools:            make([]*[]Component, 10),
 		systems:                   make(map[int]ISystem),
-		entitiesToBeAdded:         set.New[Entity](),
-		entitiesToBeKilled:        set.New[Entity](),
+		entitiesToBeAdded:         make([]Entity, 0),
+		entitiesToBeKilled:        make([]Entity, 0),
 		freeIDs:                   list.New(),
 		logger:                    logger,
 		componentTypeRegistry:     componentTypeRegistry,
@@ -80,14 +79,36 @@ func (r *Registry) CreateEntity() Entity {
 		r.freeIDs.Remove(frontElement)
 	}
 	entity := NewEntity(entityID)
-	r.entitiesToBeAdded.Add(entity)
+
+    // Handle entities to be added
+    var exists bool
+    for _, e := range r.entitiesToBeAdded {
+        if e.GetID() == entity.GetID() {
+            exists = true
+            break
+        }
+    }
+    if !exists {
+        r.entitiesToBeAdded = append(r.entitiesToBeAdded, entity)
+    }
+
 	r.logger.Debug(fmt.Sprintf("Entity created with id = %d", entityID), nil)
 	return entity
 }
 
 func (r *Registry) KillEntity(entity Entity) {
 	r.logger.Debug(fmt.Sprintf("Entity killed with id = %d", entity.GetID()), nil)
-	r.entitiesToBeKilled.Add(entity)
+    // Handle entities to be added
+    var exists bool
+    for _, e := range r.entitiesToBeKilled {
+        if e.GetID() == entity.GetID() {
+            exists = true
+            break
+        }
+    }
+    if !exists {
+        r.entitiesToBeKilled = append(r.entitiesToBeKilled, entity)
+    }
 }
 
 // COMPONENT MANAGEMENT ////////////////////
@@ -177,15 +198,15 @@ func (r *Registry) HasSystem(systemID int) bool {
 }
 
 func (r *Registry) Update() {
-	for entity := range r.entitiesToBeAdded.Iter() {
+	for _, entity := range r.entitiesToBeAdded {
 		r.AddEntityToSystems(entity)
 	}
-	r.entitiesToBeAdded.Clear()
+    r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
 
-	for entity := range r.entitiesToBeKilled.Iter() {
+	for _, entity := range r.entitiesToBeKilled {
 		fmt.Printf("entitiesToBeKilled id from iter: %d\n", entity.GetID())
 	}
-	r.entitiesToBeKilled.Clear()
+    r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
 }
 
 func (r *Registry) AddEntityToSystems(entity Entity) {
