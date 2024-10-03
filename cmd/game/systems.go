@@ -9,7 +9,7 @@ import (
 )
 
 type PrintSystem struct {
-	ecs.BaseSystem
+	*ecs.BaseSystem
 	fooState int
 }
 
@@ -28,15 +28,15 @@ func (s PrintSystem) GetName() string {
 }
 
 func (s *PrintSystem) Update(dt float32) {
-	// for _, entity := range s.GetSystemEntities() {
-	// 	sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
-	// 	s.fooState++
-	// 	fmt.Printf("entity id: %d sprite name: %s fooState: %d\n", entity.GetID(), sprite.Name, s.fooState)
-	// }
+	for _, entity := range s.GetSystemEntities() {
+		sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
+		s.fooState++
+		fmt.Printf("entity{%d} sprite name: %s fooState: %d\n", entity.GetID(), sprite.Name, s.fooState)
+	}
 }
 
 type AnotherSystem struct {
-	ecs.BaseSystem
+	*ecs.BaseSystem
 	fooState int
 }
 

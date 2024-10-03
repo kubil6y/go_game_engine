@@ -24,8 +24,8 @@ type BaseSystem struct {
 	Registry           *Registry
 }
 
-func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitset *bitset.Bitset32) BaseSystem {
-	return BaseSystem{
+func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitset *bitset.Bitset32) *BaseSystem {
+	return &BaseSystem{
 		Name:               name,
 		componentSignature: bitset,
 		entities:           make([]Entity, 0),
