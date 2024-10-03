@@ -1,22 +1,48 @@
 package ecs
 
 import (
+	"fmt"
+
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
+	"github.com/kubil6y/go_game_engine/pkg/logger"
 )
 
+type ISystem interface {
+	GetName() string
+	AddEntityToSystem(entity Entity)
+	RemoveEntityFromSystem(entity Entity)
+	GetSystemEntities() []Entity
+	GetSignature() bitset.Bitset32
+	RequireComponent(componentID int)
+}
+
 type System struct {
+	Name               string
 	componentSignature bitset.Bitset32
 	entities           []Entity
+	Logger             *logger.Logger
+	Registry           *Registry
+}
+
+func NewSystem(name string, logger *logger.Logger, registry *Registry) System {
+	return System{
+        Name: name,
+		componentSignature: *bitset.NewBitset32(),
+		entities:           make([]Entity, 0),
+		Logger:             logger,
+		Registry:           registry,
+	}
 }
 
 func (s *System) AddEntityToSystem(entity Entity) {
 	s.entities = append(s.entities, entity)
+	s.Logger.Debug(fmt.Sprintf("entity id %d added to system %s", entity.GetID(), s.Name), nil)
 }
 
 func (s *System) RemoveEntityFromSystem(entity Entity) {
 	index := -1
-	for i := 0; i < len(s.entities); i++ {
-		if s.entities[i].GetID() == entity.GetID() {
+	for i, e := range s.entities {
+		if e.GetID() == entity.GetID() {
 			index = i
 			break
 		}

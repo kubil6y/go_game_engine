@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 	"github.com/veandco/go-sdl2/sdl"
 )
+
+// NOTE: Components must be added first then they can be accessed through systems
 
 const (
 	TITLE  = "README"
@@ -37,7 +40,7 @@ func NewGame() *Game {
 		WindowWidth:  WIDTH,
 		WindowHeight: HEIGHT,
 		logger:       logger,
-		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger),
+		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger, componentTypeRegistry, systemTypeRegistry),
 	}
 }
 
@@ -83,6 +86,8 @@ func (g *Game) Setup() {
 
 func (g *Game) LoadLevel() {
 	tank := g.registry.CreateEntity()
+	tank2 := g.registry.CreateEntity()
+
 	g.registry.AddComponent(tank, SpriteComponent{
 		Name: "tank-sprite",
 	})
@@ -90,6 +95,23 @@ func (g *Game) LoadLevel() {
 		X: 10,
 		Y: 20,
 	})
+
+	g.registry.AddComponent(tank2, SpriteComponent{
+		Name: "tank-sprite",
+	})
+	g.registry.AddComponent(tank2, BoxColliderComponent{
+		X: 10,
+		Y: 20,
+	})
+
+    printSystem := NewPrintSystem(g.logger, &g.registry)
+    anotherSystem := NewAnotherSystem(g.logger, &g.registry)
+
+	g.registry.AddSystem(printSystem)
+	g.registry.AddSystem(anotherSystem)
+
+    printSystem.AddEntityToSystem(tank)
+    printSystem.AddEntityToSystem(tank2)
 }
 
 func (g *Game) Run() {
@@ -130,7 +152,13 @@ func (g *Game) Update() {
 	dt := float32(sdl.GetTicks()-g.millisecondsPreviousFrame) / 1000.0
 	g.millisecondsPreviousFrame = sdl.GetTicks()
 
-	foo(dt)
+	printSystemID, _ := systemTypeRegistry.Get(&PrintSystem{})
+	printSystem, ok := g.registry.GetSystem(printSystemID).(*PrintSystem)
+    if ok {
+        printSystem.Update(dt)
+    } else {
+        fmt.Println("not ok")
+    }
 }
 
 func (g *Game) Render() {
@@ -156,8 +184,4 @@ func (g *Game) Destroy() {
 	g.renderer.Destroy()
 	g.window.Destroy()
 	sdl.Quit()
-}
-
-func foo(dt float32) {
-	// TODO
 }

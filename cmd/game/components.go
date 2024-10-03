@@ -1,20 +1,26 @@
 package main
 
-import "github.com/kubil6y/go_game_engine/internal/type_registry"
+import (
+	"math"
+
+	"github.com/kubil6y/go_game_engine/internal/type_registry"
+)
 
 const (
 	MAX_COMPONENTS_AMOUNT = 32
 )
 
-var componentTypeRegistry = type_registry.New(MAX_COMPONENTS_AMOUNT)
+var (
+	componentTypeRegistry = type_registry.New(MAX_COMPONENTS_AMOUNT)
+	systemTypeRegistry    = type_registry.New(math.MaxInt)
+)
 
 type SpriteComponent struct {
 	Name string
 }
 
-func (c SpriteComponent) GetID() int {
-	componentID, _ := componentTypeRegistry.Register(SpriteComponent{})
-	return componentID
+func (c SpriteComponent) GetID() (int, error) {
+	return componentTypeRegistry.Get(c)
 }
 
 func (c SpriteComponent) String() string {
@@ -26,9 +32,8 @@ type BoxColliderComponent struct {
 	Y int
 }
 
-func (c BoxColliderComponent) GetID() int {
-	componentID, _ := componentTypeRegistry.Register(BoxColliderComponent{})
-	return componentID
+func (c BoxColliderComponent) GetID() (int, error) {
+	return componentTypeRegistry.Get(c)
 }
 
 func (c BoxColliderComponent) String() string {

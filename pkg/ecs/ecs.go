@@ -3,7 +3,6 @@ package ecs
 import (
 	"container/list"
 	"fmt"
-	"reflect"
 
 	"github.com/kubil6y/go_game_engine/internal/type_registry"
 	"github.com/kubil6y/go_game_engine/internal/utils"
@@ -17,7 +16,7 @@ type Entity struct {
 }
 
 type Component interface {
-	GetID() int
+	GetID() (int, error)
 	fmt.Stringer
 }
 
@@ -35,28 +34,35 @@ type Registry struct {
 	entityComponentSignatures []*bitset.Bitset32
 	// [index = component id] [index = entity id]
 	componentPools        []*[]Component
-	systems               map[reflect.Type]*System
+	systems               map[int]ISystem
 	entitiesToBeAdded     set.Set[Entity]
 	entitiesToBeKilled    set.Set[Entity]
 	freeIDs               *list.List
 	logger                *logger.Logger
 	componentTypeRegistry *type_registry.TypeRegistry
+	systemTypeRegistry    *type_registry.TypeRegistry
 }
 
-func NewRegistry(maxComponentCount int, logger *logger.Logger) *Registry {
+func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegistry *type_registry.TypeRegistry, systemTypeRegistry *type_registry.TypeRegistry) *Registry {
 	return &Registry{
 		numEntities:               0,
 		entityComponentSignatures: make([]*bitset.Bitset32, 10),
 		componentPools:            make([]*[]Component, 10),
-		systems:                   make(map[reflect.Type]*System),
+		systems:                   make(map[int]ISystem),
 		entitiesToBeAdded:         set.New[Entity](),
 		entitiesToBeKilled:        set.New[Entity](),
 		freeIDs:                   list.New(),
 		logger:                    logger,
-		componentTypeRegistry:     type_registry.New(maxComponentCount),
+		componentTypeRegistry:     componentTypeRegistry,
+		systemTypeRegistry:        systemTypeRegistry,
 	}
 }
 
+func (r *Registry) GetComponentTypeRegistry() *type_registry.TypeRegistry {
+	return r.componentTypeRegistry
+}
+
+// ENTITY MANAGEMENT ////////////////////
 func (r *Registry) CreateEntity() Entity {
 	var entityID int
 	if r.freeIDs.Len() == 0 {
@@ -84,6 +90,7 @@ func (r *Registry) KillEntity(entity Entity) {
 	r.entitiesToBeKilled.Add(entity)
 }
 
+// COMPONENT MANAGEMENT ////////////////////
 func (r *Registry) AddComponent(entity Entity, component Component) error {
 	entityID := entity.GetID()
 	componentID, err := r.componentTypeRegistry.Register(component)
@@ -118,6 +125,52 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 	return nil
 }
 
-func (r *Registry) GetComponentTypeRegistry() *type_registry.TypeRegistry {
-	return r.componentTypeRegistry
+func (r *Registry) RemoveComponent(entity Entity, component Component) {
+	panic("TODO")
+}
+
+func (r *Registry) HasComponent(entity Entity, component Component) bool {
+	panic("TODO")
+}
+
+func (r *Registry) GetComponent(entity Entity, component Component) Component {
+	componentID, err := r.componentTypeRegistry.Get(component)
+	if err != nil {
+		r.logger.Error(err, fmt.Sprintf("Registry failed to add [%s] to entity id %d", component, entity.GetID()), nil)
+	}
+	return (*r.componentPools[componentID])[entity.GetID()]
+}
+
+// SYSTEM MANAGEMENT ////////////////////
+func (r *Registry) AddSystem(system ISystem) {
+	systemID, err := r.systemTypeRegistry.Register(system)
+
+	fmt.Printf("%s systemID: %d from addsystem in ecs\n", system.GetName(), systemID) // TODO remove
+
+	if err != nil {
+		r.logger.Error(err, fmt.Sprintf("could not register system: %s", system.GetName()), nil)
+	}
+
+	_, exists := r.systems[systemID]
+	if !exists {
+		r.systems[systemID] = system
+	}
+}
+
+func (r *Registry) RemoveSystem(system ISystem) {
+	systemID, err := r.systemTypeRegistry.Get(system)
+	if err != nil {
+		r.logger.Error(err, fmt.Sprintf("could not get system: %s", system.GetName()), nil)
+		return
+	}
+	delete(r.systems, systemID)
+}
+
+func (r *Registry) GetSystem(systemID int) ISystem {
+	return r.systems[systemID]
+}
+
+func (r *Registry) HasSystem(systemID int) bool {
+	_, exists := r.systems[systemID]
+	return exists
 }

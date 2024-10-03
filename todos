@@ -4,3 +4,7 @@
 [ ] ecs
 [ ] asset manager
 [ ] eventbus
+
+## ECS
+
+[ ] systems have a signature, they should be managed by registry i should not have to add and remove them
