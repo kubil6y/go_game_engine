@@ -37,7 +37,7 @@ func NewGame() *Game {
 		WindowWidth:  WIDTH,
 		WindowHeight: HEIGHT,
 		logger:       logger,
-		registry:     *ecs.NewRegistry(logger),
+		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger),
 	}
 }
 
@@ -83,10 +83,10 @@ func (g *Game) Setup() {
 
 func (g *Game) LoadLevel() {
 	tank := g.registry.CreateEntity()
-	g.registry.AddComponent(tank, ecs.SpriteComponent{
+	g.registry.AddComponent(tank, SpriteComponent{
 		Name: "tank-sprite",
 	})
-	g.registry.AddComponent(tank, ecs.BoxColliderComponent{
+	g.registry.AddComponent(tank, BoxColliderComponent{
 		X: 10,
 		Y: 20,
 	})

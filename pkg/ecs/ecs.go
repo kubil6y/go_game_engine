@@ -12,12 +12,13 @@ import (
 	"github.com/kubil6y/go_game_engine/pkg/set"
 )
 
-const (
-	MAX_COMPONENTS_AMOUNT = 32
-)
-
 type Entity struct {
 	ID int
+}
+
+type Component interface {
+	GetID() int
+	fmt.Stringer
 }
 
 func NewEntity(id int) Entity {
@@ -33,15 +34,16 @@ type Registry struct {
 	// [index = entity id]
 	entityComponentSignatures []*bitset.Bitset32
 	// [index = component id] [index = entity id]
-	componentPools     []*[]Component
-	systems            map[reflect.Type]*System
-	entitiesToBeAdded  set.Set[Entity]
-	entitiesToBeKilled set.Set[Entity]
-	freeIDs            *list.List
-	logger             *logger.Logger
+	componentPools        []*[]Component
+	systems               map[reflect.Type]*System
+	entitiesToBeAdded     set.Set[Entity]
+	entitiesToBeKilled    set.Set[Entity]
+	freeIDs               *list.List
+	logger                *logger.Logger
+	componentTypeRegistry *type_registry.TypeRegistry
 }
 
-func NewRegistry(logger *logger.Logger) *Registry {
+func NewRegistry(maxComponentCount int, logger *logger.Logger) *Registry {
 	return &Registry{
 		numEntities:               0,
 		entityComponentSignatures: make([]*bitset.Bitset32, 10),
@@ -51,6 +53,7 @@ func NewRegistry(logger *logger.Logger) *Registry {
 		entitiesToBeKilled:        set.New[Entity](),
 		freeIDs:                   list.New(),
 		logger:                    logger,
+		componentTypeRegistry:     type_registry.New(maxComponentCount),
 	}
 }
 
@@ -83,7 +86,7 @@ func (r *Registry) KillEntity(entity Entity) {
 
 func (r *Registry) AddComponent(entity Entity, component Component) error {
 	entityID := entity.GetID()
-	componentID, err := componentTypeRegistry.Register(component)
+	componentID, err := r.componentTypeRegistry.Register(component)
 	if err != nil {
 		switch err {
 		case type_registry.ErrNilItem:
@@ -95,9 +98,8 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 		}
 	}
 
-	// Ensure componentPools has enough capacity for the componentID
 	if componentID >= len(r.componentPools) {
-		newSize := componentID + 1 // Resize to at least accommodate the new componentID
+		newSize := componentID + 1
 		r.componentPools = utils.ResizeArray(r.componentPools, newSize)
 	}
 
@@ -114,4 +116,8 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 	(*componentPool)[entityID] = component
 	r.logger.Info(fmt.Sprintf("%s registered with id: %d", component, componentID), nil)
 	return nil
+}
+
+func (r *Registry) GetComponentTypeRegistry() *type_registry.TypeRegistry {
+	return r.componentTypeRegistry
 }

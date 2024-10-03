@@ -1,17 +1,12 @@
-package ecs
+package main
 
-import (
-	"fmt"
+import "github.com/kubil6y/go_game_engine/internal/type_registry"
 
-	"github.com/kubil6y/go_game_engine/internal/type_registry"
+const (
+	MAX_COMPONENTS_AMOUNT = 32
 )
 
 var componentTypeRegistry = type_registry.New(MAX_COMPONENTS_AMOUNT)
-
-type Component interface {
-	GetID() int
-	fmt.Stringer
-}
 
 type SpriteComponent struct {
 	Name string
@@ -26,9 +21,9 @@ func (c SpriteComponent) String() string {
 	return "SpriteComponent"
 }
 
-type BoxColliderComponent struct{
-    X int
-    Y int
+type BoxColliderComponent struct {
+	X int
+	Y int
 }
 
 func (c BoxColliderComponent) GetID() int {

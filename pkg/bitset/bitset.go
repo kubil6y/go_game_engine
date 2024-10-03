@@ -7,7 +7,7 @@ type Bitset interface {
 	Clear(bit int)
 	IsSet(bit int) bool
 	Reset()
-    fmt.Stringer
+	fmt.Stringer
 }
 
 type Bitset32 struct {
@@ -38,7 +38,7 @@ func (b *Bitset32) IsSet(bit int) bool {
 }
 
 func (b *Bitset32) Reset() {
-    b.value = 0
+	b.value = 0
 }
 
 func (b *Bitset32) validate(bit int) {
@@ -81,7 +81,7 @@ func (b *Bitset64) IsSet(bit int) bool {
 }
 
 func (b *Bitset64) Reset() {
-    b.value = 0
+	b.value = 0
 }
 
 func (b *Bitset64) validate(bit int) {

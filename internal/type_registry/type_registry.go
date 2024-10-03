@@ -28,11 +28,11 @@ func New(maxItems int) *TypeRegistry {
 }
 
 func (r *TypeRegistry) Size() int {
-    return len(r.typeIDs)
+	return len(r.typeIDs)
 }
 
-func (r * TypeRegistry) GetTypeIDs() map[reflect.Type]int {
-    return r.typeIDs
+func (r *TypeRegistry) GetTypeIDs() map[reflect.Type]int {
+	return r.typeIDs
 }
 
 func (r *TypeRegistry) Register(item any) (int, error) {
