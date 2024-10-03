@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"fmt"
 
-	"github.com/kubil6y/go_game_engine/internal/type_registry"
 	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
@@ -38,11 +37,11 @@ type Registry struct {
 	entitiesToBeKilled    []Entity
 	freeIDs               *list.List
 	logger                *logger.Logger
-	componentTypeRegistry *type_registry.TypeRegistry
-	systemTypeRegistry    *type_registry.TypeRegistry
+	componentTypeRegistry *TypeRegistry
+	systemTypeRegistry    *TypeRegistry
 }
 
-func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegistry *type_registry.TypeRegistry, systemTypeRegistry *type_registry.TypeRegistry) *Registry {
+func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegistry *TypeRegistry, systemTypeRegistry *TypeRegistry) *Registry {
 	return &Registry{
 		numEntities:               0,
 		entityComponentSignatures: make([]bitset.Bitset32, 10),
@@ -57,7 +56,7 @@ func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegi
 	}
 }
 
-func (r *Registry) GetComponentTypeRegistry() *type_registry.TypeRegistry {
+func (r *Registry) GetComponentTypeRegistry() *TypeRegistry {
 	return r.componentTypeRegistry
 }
 
@@ -117,9 +116,9 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 	componentID, err := r.componentTypeRegistry.Register(component)
 	if err != nil {
 		switch err {
-		case type_registry.ErrNilItem:
+		case ErrNilItem:
 			panic("can not register null item")
-		case type_registry.ErrMaxItemsExceeded:
+		case ErrMaxItemsExceeded:
 			panic("too many types registered!")
 		default:
 			return nil

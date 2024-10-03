@@ -1,4 +1,4 @@
-package type_registry
+package ecs
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ type TypeRegistry struct {
 	mu       sync.Mutex
 }
 
-func New(maxItems int) *TypeRegistry {
+func NewTypeRegistry(maxItems int) *TypeRegistry {
 	return &TypeRegistry{
 		maxItems: maxItems,
 		nextID:   0,

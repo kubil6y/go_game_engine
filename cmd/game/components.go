@@ -3,7 +3,7 @@ package main
 import (
 	"math"
 
-	"github.com/kubil6y/go_game_engine/internal/type_registry"
+	"github.com/kubil6y/go_game_engine/pkg/ecs"
 )
 
 const (
@@ -11,8 +11,8 @@ const (
 )
 
 var (
-	componentTypeRegistry = type_registry.New(MAX_COMPONENTS_AMOUNT)
-	systemTypeRegistry    = type_registry.New(math.MaxInt)
+	componentTypeRegistry = ecs.NewTypeRegistry(MAX_COMPONENTS_AMOUNT)
+	systemTypeRegistry    = ecs.NewTypeRegistry(math.MaxInt)
 )
 
 type SpriteComponent struct {
