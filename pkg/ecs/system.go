@@ -7,7 +7,7 @@ import (
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 )
 
-type ISystem interface {
+type System interface {
 	GetName() string
 	AddEntityToSystem(entity Entity)
 	RemoveEntityFromSystem(entity Entity)
@@ -16,7 +16,7 @@ type ISystem interface {
 	RequireComponent(componentID int)
 }
 
-type System struct {
+type BaseSystem struct {
 	Name               string
 	componentSignature *bitset.Bitset32
 	entities           []Entity
@@ -24,8 +24,8 @@ type System struct {
 	Registry           *Registry
 }
 
-func NewSystem(name string, logger *logger.Logger, registry *Registry, bitset *bitset.Bitset32) System {
-	return System{
+func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitset *bitset.Bitset32) BaseSystem {
+	return BaseSystem{
 		Name:               name,
 		componentSignature: bitset,
 		entities:           make([]Entity, 0),
@@ -34,12 +34,12 @@ func NewSystem(name string, logger *logger.Logger, registry *Registry, bitset *b
 	}
 }
 
-func (s *System) AddEntityToSystem(entity Entity) {
+func (s *BaseSystem) AddEntityToSystem(entity Entity) {
 	s.entities = append(s.entities, entity)
 	s.Logger.Debug(fmt.Sprintf("Entity id = %d added to %s", entity.GetID(), s.Name), nil)
 }
 
-func (s *System) RemoveEntityFromSystem(entity Entity) {
+func (s *BaseSystem) RemoveEntityFromSystem(entity Entity) {
 	index := -1
 	for i, e := range s.entities {
 		if e.GetID() == entity.GetID() {
@@ -52,14 +52,14 @@ func (s *System) RemoveEntityFromSystem(entity Entity) {
 	}
 }
 
-func (s *System) GetSystemEntities() []Entity {
+func (s *BaseSystem) GetSystemEntities() []Entity {
 	return s.entities
 }
 
-func (s *System) GetSignature() *bitset.Bitset32 {
+func (s *BaseSystem) GetSignature() *bitset.Bitset32 {
 	return s.componentSignature
 }
 
-func (s *System) RequireComponent(componentID int) {
+func (s *BaseSystem) RequireComponent(componentID int) {
 	s.componentSignature.Set(componentID)
 }

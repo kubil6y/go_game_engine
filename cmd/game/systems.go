@@ -9,7 +9,7 @@ import (
 )
 
 type PrintSystem struct {
-	ecs.System
+	ecs.BaseSystem
 	fooState int
 }
 
@@ -18,7 +18,7 @@ func NewPrintSystem(logger *logger.Logger, registry *ecs.Registry) *PrintSystem 
 	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
 	bs.Set(componentTypeRegistry.Getx(BoxColliderComponent{}))
 	return &PrintSystem{
-		System:   ecs.NewSystem("PrintSystem", logger, registry, bs),
+		BaseSystem:   ecs.NewBaseSystem("PrintSystem", logger, registry, bs),
 		fooState: 88,
 	}
 }
@@ -36,7 +36,7 @@ func (s *PrintSystem) Update(dt float32) {
 }
 
 type AnotherSystem struct {
-	ecs.System
+	ecs.BaseSystem
 	fooState int
 }
 
@@ -44,7 +44,7 @@ func NewAnotherSystem(logger *logger.Logger, registry *ecs.Registry) *AnotherSys
 	bs := bitset.NewBitset32()
 	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
 	return &AnotherSystem{
-		System:   ecs.NewSystem("AnotherSystem", logger, registry, bs),
+		BaseSystem:   ecs.NewBaseSystem("AnotherSystem", logger, registry, bs),
 		fooState: 88,
 	}
 }

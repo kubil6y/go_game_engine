@@ -33,7 +33,7 @@ type Registry struct {
 	entityComponentSignatures []bitset.Bitset32
 	// [index = component id] [index = entity id]
 	componentPools        []*[]Component
-	systems               map[int]ISystem
+	systems               map[int]System
 	entitiesToBeAdded     []Entity
 	entitiesToBeKilled    []Entity
 	freeIDs               *list.List
@@ -47,7 +47,7 @@ func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegi
 		numEntities:               0,
 		entityComponentSignatures: make([]bitset.Bitset32, 10),
 		componentPools:            make([]*[]Component, 10),
-		systems:                   make(map[int]ISystem),
+		systems:                   make(map[int]System),
 		entitiesToBeAdded:         make([]Entity, 0),
 		entitiesToBeKilled:        make([]Entity, 0),
 		freeIDs:                   list.New(),
@@ -165,7 +165,7 @@ func (r *Registry) GetComponent(entity Entity, component Component) Component {
 }
 
 // SYSTEM MANAGEMENT ////////////////////
-func (r *Registry) AddSystem(system ISystem) {
+func (r *Registry) AddSystem(system System) {
 	systemID, err := r.systemTypeRegistry.Register(system)
 
 	if err != nil {
@@ -179,7 +179,7 @@ func (r *Registry) AddSystem(system ISystem) {
 	}
 }
 
-func (r *Registry) RemoveSystem(system ISystem) {
+func (r *Registry) RemoveSystem(system System) {
 	systemID, err := r.systemTypeRegistry.Get(system)
 	if err != nil {
 		r.logger.Error(err, fmt.Sprintf("could not get system: %s", system.GetName()), nil)
@@ -188,7 +188,7 @@ func (r *Registry) RemoveSystem(system ISystem) {
 	delete(r.systems, systemID)
 }
 
-func (r *Registry) GetSystem(systemID int) ISystem {
+func (r *Registry) GetSystem(systemID int) System {
 	return r.systems[systemID]
 }
 
