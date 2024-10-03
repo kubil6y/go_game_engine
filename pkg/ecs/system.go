@@ -36,7 +36,7 @@ func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitse
 
 func (s *BaseSystem) AddEntityToSystem(entity Entity) {
 	s.entities = append(s.entities, entity)
-	s.Logger.Debug(fmt.Sprintf("Entity id = %d added to %s", entity.GetID(), s.Name), nil)
+	s.Logger.Debug(fmt.Sprintf("Entity{%d} added to %s", entity.GetID(), s.Name), nil)
 }
 
 func (s *BaseSystem) RemoveEntityFromSystem(entity Entity) {

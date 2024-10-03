@@ -20,9 +20,9 @@ func (s Set[T]) Contains(element T) bool {
 }
 
 func (s Set[T]) Clear() {
-    for k := range s {
-        delete(s, k)
-    }
+	for k := range s {
+		delete(s, k)
+	}
 }
 
 func (s Set[T]) Size() int {
@@ -35,12 +35,12 @@ func (s Set[T]) Empty() bool {
 
 // Experimenting...
 func (s Set[T]) Iter() <-chan T {
-    output := make(chan T)
-    go func() {
-        defer close(output)
-        for v := range s {
-            output <- v
-        }
-    }()
-    return output
+	output := make(chan T)
+	go func() {
+		defer close(output)
+		for v := range s {
+			output <- v
+		}
+	}()
+	return output
 }

@@ -18,8 +18,8 @@ func NewPrintSystem(logger *logger.Logger, registry *ecs.Registry) *PrintSystem 
 	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
 	bs.Set(componentTypeRegistry.Getx(BoxColliderComponent{}))
 	return &PrintSystem{
-		BaseSystem:   ecs.NewBaseSystem("PrintSystem", logger, registry, bs),
-		fooState: 88,
+		BaseSystem: ecs.NewBaseSystem("PrintSystem", logger, registry, bs),
+		fooState:   88,
 	}
 }
 
@@ -44,8 +44,8 @@ func NewAnotherSystem(logger *logger.Logger, registry *ecs.Registry) *AnotherSys
 	bs := bitset.NewBitset32()
 	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
 	return &AnotherSystem{
-		BaseSystem:   ecs.NewBaseSystem("AnotherSystem", logger, registry, bs),
-		fooState: 88,
+		BaseSystem: ecs.NewBaseSystem("AnotherSystem", logger, registry, bs),
+		fooState:   88,
 	}
 }
 

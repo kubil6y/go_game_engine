@@ -91,7 +91,7 @@ func (r *Registry) CreateEntity() Entity {
 		r.entitiesToBeAdded = append(r.entitiesToBeAdded, entity)
 	}
 
-	r.logger.Debug(fmt.Sprintf("Entity created with id = %d", entityID), nil)
+	r.logger.Debug(fmt.Sprintf("Entity{%d} created", entityID), nil)
 	return entity
 }
 
@@ -143,7 +143,7 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 	(*componentPool)[entityID] = component
 
 	r.entityComponentSignatures[entityID].Set(componentID)
-	r.logger.Debug(fmt.Sprintf("%s component id = %d registered to entity id = %d", component, componentID, entityID), nil)
+	r.logger.Debug(fmt.Sprintf("%s{%d} added to entity{%d}", component, componentID, entityID), nil)
 	return nil
 }
 
@@ -151,7 +151,7 @@ func (r *Registry) RemoveComponent(entity Entity, component Component) {
 	entityID := entity.GetID()
 	componentID, err := r.componentTypeRegistry.Register(component)
 	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Failed to remove %s component", component), nil)
+		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
 		return
 	}
 	r.entityComponentSignatures[entityID].Clear(componentID)
@@ -161,7 +161,7 @@ func (r *Registry) HasComponent(entity Entity, component Component) bool {
 	entityID := entity.GetID()
 	componentID, err := r.componentTypeRegistry.Register(component)
 	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Failed to remove %s component", component), nil)
+		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
 		return false
 	}
 	signature := r.entityComponentSignatures[entityID]
@@ -171,7 +171,7 @@ func (r *Registry) HasComponent(entity Entity, component Component) bool {
 func (r *Registry) GetComponent(entity Entity, component Component) Component {
 	componentID, err := r.componentTypeRegistry.Get(component)
 	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Registry failed to add [%s] to entity id %d", component, entity.GetID()), nil)
+		r.logger.Error(err, fmt.Sprintf("Registry failed to add [%s] to Entity{%d}", component, entity.GetID()), nil)
 	}
 	return (*r.componentPools[componentID])[entity.GetID()]
 }
@@ -187,7 +187,7 @@ func (r *Registry) AddSystem(system System) {
 	_, exists := r.systems[systemID]
 	if !exists {
 		r.systems[systemID] = system
-		r.logger.Debug(fmt.Sprintf("%s with systemID: %d registered", system.GetName(), systemID), nil)
+		r.logger.Debug(fmt.Sprintf("%s{%d} registered", system.GetName(), systemID), nil)
 	}
 }
 
@@ -216,7 +216,7 @@ func (r *Registry) Update() {
 	r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
 
 	for _, entity := range r.entitiesToBeKilled {
-		fmt.Printf("entitiesToBeKilled id from iter: %d\n", entity.GetID())
+		fmt.Printf("TODO entitiesToBeKilled: %d\n", entity.GetID())
 	}
 	r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
 }
@@ -233,6 +233,6 @@ func (r *Registry) AddEntityToSystems(entity Entity) {
 func (r *Registry) RemoveEntityFromSystems(entity Entity) {
 	for _, system := range r.systems {
 		system.RemoveEntityFromSystem(entity)
-		r.logger.Debug(fmt.Sprintf("entity id = %d is removed from system: %s", entity.GetID(), system.GetName()), nil)
+		r.logger.Debug(fmt.Sprintf("Entity{%d} %d is removed from %s", entity.GetID(), system.GetName()), nil)
 	}
 }
