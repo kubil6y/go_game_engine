@@ -1,15 +1,7 @@
-[x] Makefile
-[x] bitset
-[x] framerate setup
-[x] ecs
-[x] asset manager
-[ ] eventbus
-
 ## ECS
 
-[x] systems have a signature, they should be managed by registry i should not have to add and remove them
-[x] refactor debug messages make them easy to read
-[x] set is bottleneck
-[x] asset manager
+[ ] add SpriteComponent, TransformComponent and render the map
 [ ] render map
-[ ] create eventbus
+[ ] make chopper move!
+[ ] add key input events (debug)
+[ ] camera, animations

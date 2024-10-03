@@ -5,6 +5,7 @@ import (
 
 	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
+	"github.com/kubil6y/go_game_engine/pkg/eventbus"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -19,28 +20,28 @@ const (
 )
 
 type Game struct {
-	debug      bool
-	running    bool
-	window     *sdl.Window
-	renderer   *sdl.Renderer
-	logger     *logger.Logger
-	assetStore *asset_store.AssetStore
-
-	WindowWidth  int32
-	WindowHeight int32
+	debug        bool
+	running      bool
+	msPrevFrame  uint32
+	windowWidth  int32
+	windowHeight int32
+	window       *sdl.Window
+	renderer     *sdl.Renderer
+	logger       *logger.Logger
+	assetStore   *asset_store.AssetStore
 	registry     ecs.Registry
-
-	millisecondsPreviousFrame uint32
+	events       *eventbus.EventBus
 }
 
 func NewGame() *Game {
 	logger := logger.New(logger.WithLogLevel(logger.LevelDebug))
 	return &Game{
-		WindowWidth:  WIDTH,
-		WindowHeight: HEIGHT,
+		windowWidth:  WIDTH,
+		windowHeight: HEIGHT,
 		logger:       logger,
 		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger, componentTypeRegistry, systemTypeRegistry),
 		assetStore:   asset_store.New(),
+		events:       eventbus.NewEventBus(),
 	}
 }
 
@@ -71,7 +72,7 @@ func (g *Game) Initialize() error {
 		return err
 	}
 
-	err = renderer.SetLogicalSize(g.WindowWidth, g.WindowHeight)
+	err = renderer.SetLogicalSize(g.windowWidth, g.windowHeight)
 	if err != nil {
 		g.logger.Error(err, "failed to set logical size", nil)
 		return err
@@ -85,9 +86,9 @@ func (g *Game) Setup() {
 }
 
 func (g *Game) LoadLevel() {
-    if err := g.LoadAssets(); err != nil {
-        g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
-    }
+	if err := g.LoadAssets(); err != nil {
+		g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
+	}
 	// NOTE: all the components must be registered beforehand to entities
 	// before they are consumed by systems.
 	tank := g.registry.CreateEntity()
@@ -149,12 +150,12 @@ func (g *Game) ProcessInput() {
 }
 
 func (g *Game) Update() {
-	waitDuration := MILLISECONDS_PER_FRAME - (sdl.GetTicks() - g.millisecondsPreviousFrame)
+	waitDuration := MILLISECONDS_PER_FRAME - (sdl.GetTicks() - g.msPrevFrame)
 	if waitDuration > 0 && waitDuration <= MILLISECONDS_PER_FRAME {
 		sdl.Delay(waitDuration)
 	}
-	dt := float32(sdl.GetTicks()-g.millisecondsPreviousFrame) / 1000.0
-	g.millisecondsPreviousFrame = sdl.GetTicks()
+	dt := float32(sdl.GetTicks()-g.msPrevFrame) / 1000.0
+	g.msPrevFrame = sdl.GetTicks()
 
 	g.registry.Update()
 
