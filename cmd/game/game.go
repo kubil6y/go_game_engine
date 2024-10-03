@@ -7,6 +7,7 @@ import (
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/eventbus"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
+	"github.com/kubil6y/go_game_engine/pkg/vector"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -98,17 +99,15 @@ func (g *Game) LoadLevel() {
 		Name: "tank-sprite",
 	})
 	g.registry.AddComponent(tank, BoxColliderComponent{
-		X: 10,
-		Y: 20,
+		Width:  10,
+		Height: 50,
+		Offset: vector.NewZeroVec2(),
 	})
 
 	// g.registry.AddComponent(tank2, SpriteComponent{
 	// 	Name: "tank-sprite",
 	// })
-	g.registry.AddComponent(tank2, BoxColliderComponent{
-		X: 10,
-		Y: 20,
-	})
+	g.registry.AddComponent(tank2, BoxColliderComponent{})
 
 	// Create systems
 	printSystem := NewPrintSystem(g.logger, &g.registry)
@@ -185,7 +184,7 @@ func (g *Game) Render() {
 		W: 32,
 		H: 32,
 	}
-	g.renderer.CopyEx(g.assetStore.GetTexture(IMG_Chopper), nil, &renderRect, 0, nil, sdl.FLIP_NONE)
+	g.renderer.CopyEx(g.assetStore.GetTexture(IMG_Tank), nil, &renderRect, 0, nil, sdl.FLIP_NONE)
 
 	g.renderer.Present()
 }

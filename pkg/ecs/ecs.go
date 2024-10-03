@@ -68,9 +68,9 @@ func (r *Registry) CreateEntity() Entity {
 		entityID = r.numEntities
 		if entityID >= len(r.entityComponentSignatures) {
 			utils.ResizeArray(r.entityComponentSignatures, entityID+1)
-			for i := len(r.entityComponentSignatures); i <= entityID; i++ {
-				r.entityComponentSignatures[i] = *bitset.NewBitset32()
-			}
+			// for i := len(r.entityComponentSignatures); i <= entityID; i++ {
+			// 	r.entityComponentSignatures[i] = *bitset.NewBitset32()
+			// }
 		}
 	} else {
 		frontElement := r.freeIDs.Front()
