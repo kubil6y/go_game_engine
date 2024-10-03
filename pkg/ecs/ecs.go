@@ -79,17 +79,17 @@ func (r *Registry) CreateEntity() Entity {
 	}
 	entity := NewEntity(entityID)
 
-    // Handle entities to be added
-    var exists bool
-    for _, e := range r.entitiesToBeAdded {
-        if e.GetID() == entity.GetID() {
-            exists = true
-            break
-        }
-    }
-    if !exists {
-        r.entitiesToBeAdded = append(r.entitiesToBeAdded, entity)
-    }
+	// Handle entities to be added
+	var exists bool
+	for _, e := range r.entitiesToBeAdded {
+		if e.GetID() == entity.GetID() {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		r.entitiesToBeAdded = append(r.entitiesToBeAdded, entity)
+	}
 
 	r.logger.Debug(fmt.Sprintf("Entity created with id = %d", entityID), nil)
 	return entity
@@ -97,17 +97,17 @@ func (r *Registry) CreateEntity() Entity {
 
 func (r *Registry) KillEntity(entity Entity) {
 	r.logger.Debug(fmt.Sprintf("Entity killed with id = %d", entity.GetID()), nil)
-    // Handle entities to be added
-    var exists bool
-    for _, e := range r.entitiesToBeKilled {
-        if e.GetID() == entity.GetID() {
-            exists = true
-            break
-        }
-    }
-    if !exists {
-        r.entitiesToBeKilled = append(r.entitiesToBeKilled, entity)
-    }
+	// Handle entities to be added
+	var exists bool
+	for _, e := range r.entitiesToBeKilled {
+		if e.GetID() == entity.GetID() {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		r.entitiesToBeKilled = append(r.entitiesToBeKilled, entity)
+	}
 }
 
 // COMPONENT MANAGEMENT ////////////////////
@@ -148,11 +148,24 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 }
 
 func (r *Registry) RemoveComponent(entity Entity, component Component) {
-	panic("TODO")
+	entityID := entity.GetID()
+	componentID, err := r.componentTypeRegistry.Register(component)
+	if err != nil {
+		r.logger.Error(err, fmt.Sprintf("Failed to remove %s component", component), nil)
+		return
+	}
+	r.entityComponentSignatures[entityID].Clear(componentID)
 }
 
 func (r *Registry) HasComponent(entity Entity, component Component) bool {
-	panic("TODO")
+	entityID := entity.GetID()
+	componentID, err := r.componentTypeRegistry.Register(component)
+	if err != nil {
+		r.logger.Error(err, fmt.Sprintf("Failed to remove %s component", component), nil)
+		return false
+	}
+	signature := r.entityComponentSignatures[entityID]
+	return signature.IsSet(componentID)
 }
 
 func (r *Registry) GetComponent(entity Entity, component Component) Component {
@@ -200,12 +213,12 @@ func (r *Registry) Update() {
 	for _, entity := range r.entitiesToBeAdded {
 		r.AddEntityToSystems(entity)
 	}
-    r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
+	r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
 
 	for _, entity := range r.entitiesToBeKilled {
 		fmt.Printf("entitiesToBeKilled id from iter: %d\n", entity.GetID())
 	}
-    r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
+	r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
 }
 
 func (r *Registry) AddEntityToSystems(entity Entity) {
