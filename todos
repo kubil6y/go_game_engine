@@ -2,7 +2,12 @@
 --- urgent ---
 [x] components gets registered when they are added to entities. 
 this is wrong. i should register component independently.
+
+
 [ ] GetComponent returns the fucking copy :(
+    - solution: get rid of that reflect things use a fucking enum.
+    - store them in the array as values then reference them is that so hard?
+
 --- 
 
 [ ] add SpriteComponent, TransformComponent and render the map

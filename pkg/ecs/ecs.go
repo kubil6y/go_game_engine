@@ -9,12 +9,15 @@ import (
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 )
 
+type SystemTypeID int
+type ComponentTypeID int
+
 type Entity struct {
 	ID int
 }
 
 type Component interface {
-	GetID() (int, error)
+	GetID() int
 	fmt.Stringer
 }
 
@@ -31,33 +34,25 @@ type Registry struct {
 	// [index = entity id]
 	entityComponentSignatures []bitset.Bitset32
 	// [index = component id] [index = entity id]
-	componentPools        []*[]Component
-	systems               map[int]System
-	entitiesToBeAdded     []Entity
-	entitiesToBeKilled    []Entity
-	freeIDs               *list.List
-	logger                *logger.Logger
-	componentTypeRegistry *TypeRegistry
-	systemTypeRegistry    *TypeRegistry
+	componentPools     []*[]Component
+	systems            map[SystemTypeID]System
+	entitiesToBeAdded  []Entity
+	entitiesToBeKilled []Entity
+	freeIDs            *list.List
+	logger             *logger.Logger
 }
 
-func NewRegistry(maxComponentCount int, logger *logger.Logger, componentTypeRegistry *TypeRegistry, systemTypeRegistry *TypeRegistry) *Registry {
+func NewRegistry(maxComponentCount int, logger *logger.Logger) *Registry {
 	return &Registry{
 		numEntities:               0,
 		entityComponentSignatures: make([]bitset.Bitset32, 10),
 		componentPools:            make([]*[]Component, 10),
-		systems:                   make(map[int]System),
+		systems:                   make(map[SystemTypeID]System),
 		entitiesToBeAdded:         make([]Entity, 0),
 		entitiesToBeKilled:        make([]Entity, 0),
 		freeIDs:                   list.New(),
 		logger:                    logger,
-		componentTypeRegistry:     componentTypeRegistry,
-		systemTypeRegistry:        systemTypeRegistry,
 	}
-}
-
-func (r *Registry) GetComponentTypeRegistry() *TypeRegistry {
-	return r.componentTypeRegistry
 }
 
 // ENTITY MANAGEMENT ////////////////////
@@ -67,7 +62,7 @@ func (r *Registry) CreateEntity() Entity {
 		r.numEntities++
 		entityID = r.numEntities
 		if entityID >= len(r.entityComponentSignatures) {
-            // WARNING
+			// WARNING
 			// newSize := entityID + 1 // This is insane but thats the code in pikuma.com
 			newSize := int(float32(len(r.entityComponentSignatures)) * 1.5)
 			r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
@@ -115,36 +110,12 @@ func (r *Registry) KillEntity(entity Entity) {
 	}
 }
 
-func (r *Registry) RegisterComponent(component Component) error {
-	_, err := r.componentTypeRegistry.Register(component)
-	if err != nil {
-		switch err {
-		case ErrNilItem:
-			panic("can not register null item")
-		case ErrMaxItemsExceeded:
-			panic("too many types registered!")
-		default:
-			return nil
-		}
-	}
-	componentID, err := component.GetID()
-	if err != nil {
-		return err
-	}
-	r.logger.Info(fmt.Sprintf("%s{%d} is registered", component.String(), componentID), nil)
-	return nil
-}
-
 // COMPONENT MANAGEMENT ////////////////////
-func (r *Registry) AddComponent(entity Entity, component Component) error {
+func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, component Component) error {
 	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Get(component)
-	if err != nil {
-		return err
-	}
-	if componentID >= len(r.componentPools) {
+	if int(componentID) >= len(r.componentPools) {
 		newSize := componentID + 1
-		r.componentPools = utils.ResizeArray(r.componentPools, newSize)
+		r.componentPools = utils.ResizeArray(r.componentPools, int(newSize))
 	}
 
 	if r.componentPools[componentID] == nil {
@@ -159,48 +130,28 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 	}
 	(*componentPool)[entityID] = component
 
-	r.entityComponentSignatures[entityID].Set(componentID)
+	r.entityComponentSignatures[entityID].Set(int(componentID))
 	r.logger.Debug(fmt.Sprintf("%s{%d} added to entity{%d}", component, componentID, entityID), nil)
 	return nil
 }
 
-func (r *Registry) RemoveComponent(entity Entity, component Component) {
+func (r *Registry) RemoveComponent(entity Entity, componentID ComponentTypeID) {
 	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Get(component)
-	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
-		return
-	}
-	r.entityComponentSignatures[entityID].Clear(componentID)
+	r.entityComponentSignatures[entityID].Clear(int(componentID))
 }
 
-func (r *Registry) HasComponent(entity Entity, component Component) bool {
+func (r *Registry) HasComponent(entity Entity, componentID ComponentTypeID) bool {
 	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Get(component)
-	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
-		return false
-	}
 	signature := r.entityComponentSignatures[entityID]
-	return signature.IsSet(componentID)
+	return signature.IsSet(int(componentID))
 }
 
-func (r *Registry) GetComponent(entity Entity, component Component) Component {
-	componentID, err := r.componentTypeRegistry.Get(component)
-	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("Registry failed to add [%s] to Entity{%d}", component, entity.GetID()), nil)
-	}
+func (r *Registry) GetComponent(entity Entity, componentID ComponentTypeID) Component {
 	return (*r.componentPools[componentID])[entity.GetID()]
 }
 
 // SYSTEM MANAGEMENT ////////////////////
-func (r *Registry) AddSystem(system System) {
-	systemID, err := r.systemTypeRegistry.Register(system)
-
-	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("could not register system: %s", system.GetName()), nil)
-	}
-
+func (r *Registry) AddSystem(systemID SystemTypeID, system System) {
 	_, exists := r.systems[systemID]
 	if !exists {
 		r.systems[systemID] = system
@@ -208,20 +159,15 @@ func (r *Registry) AddSystem(system System) {
 	}
 }
 
-func (r *Registry) RemoveSystem(system System) {
-	systemID, err := r.systemTypeRegistry.Get(system)
-	if err != nil {
-		r.logger.Error(err, fmt.Sprintf("could not get system: %s", system.GetName()), nil)
-		return
-	}
+func (r *Registry) RemoveSystem(systemID SystemTypeID) {
 	delete(r.systems, systemID)
 }
 
-func (r *Registry) GetSystem(systemID int) System {
+func (r *Registry) GetSystem(systemID SystemTypeID) System {
 	return r.systems[systemID]
 }
 
-func (r *Registry) HasSystem(systemID int) bool {
+func (r *Registry) HasSystem(systemID SystemTypeID) bool {
 	_, exists := r.systems[systemID]
 	return exists
 }

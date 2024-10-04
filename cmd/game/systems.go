@@ -8,6 +8,11 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+const (
+	RENDER_SYSTEM ecs.SystemTypeID = iota
+	MOVEMENT_SYSTEM
+)
+
 type RenderSystem struct {
 	*ecs.BaseSystem
 	renderer   *sdl.Renderer
@@ -16,8 +21,8 @@ type RenderSystem struct {
 
 func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer, assetStore *asset_store.AssetStore) *RenderSystem {
 	bs := bitset.NewBitset32()
-	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
-	bs.Set(componentTypeRegistry.Getx(TransformComponent{}))
+	bs.Set(int(SPRITE_COMPONENT))
+	bs.Set(int(TRANSFORM_COMPONENT))
 	return &RenderSystem{
 		BaseSystem: ecs.NewBaseSystem("RenderSystem", logger, registry, bs),
 		renderer:   renderer,
@@ -35,14 +40,14 @@ func (s *RenderSystem) Update() {
 
 	for currZIndex <= maxZIndex {
 		for _, entity := range s.GetSystemEntities() {
-			sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
+			sprite := s.Registry.GetComponent(entity, SPRITE_COMPONENT).(SpriteComponent)
 			if maxZIndex < sprite.ZIndex {
 				maxZIndex = sprite.ZIndex
 			}
 			if currZIndex != sprite.ZIndex {
 				continue
 			}
-			tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
+			tf := s.Registry.GetComponent(entity, TRANSFORM_COMPONENT).(TransformComponent)
 			var dstRect sdl.Rect
 			dstRect.X = int32(tf.Position.X)
 			dstRect.Y = int32(tf.Position.Y)
@@ -62,8 +67,8 @@ type MovementSystem struct {
 
 func NewMovementSystem(logger *logger.Logger, registry *ecs.Registry) *MovementSystem {
 	bs := bitset.NewBitset32()
-	bs.Set(componentTypeRegistry.Getx(RigidbodyComponent{}))
-	bs.Set(componentTypeRegistry.Getx(TransformComponent{}))
+	bs.Set(int(RIGIDBODY_COMPONENT))
+	bs.Set(int(TRANSFORM_COMPONENT))
 	return &MovementSystem{
 		BaseSystem: ecs.NewBaseSystem("MovementSystem", logger, registry, bs),
 	}
@@ -75,10 +80,9 @@ func (s MovementSystem) GetName() string {
 
 func (s *MovementSystem) Update(dt float32) {
 	for _, entity := range s.GetSystemEntities() {
-		tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
-		rb := s.Registry.GetComponent(entity, RigidbodyComponent{}).(RigidbodyComponent)
+		tf := s.Registry.GetComponent(entity, TRANSFORM_COMPONENT).(TransformComponent)
+		rb := s.Registry.GetComponent(entity, RIGIDBODY_COMPONENT).(RigidbodyComponent)
 		tf.Position.X += rb.Velocity.X * dt
 		tf.Position.Y += rb.Velocity.Y * dt
-        fmt.Printf(
 	}
 }

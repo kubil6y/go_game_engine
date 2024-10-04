@@ -57,6 +57,7 @@ func (g *Game) LoadAssets() error {
 
 			tile := g.registry.CreateEntity()
 			g.registry.AddComponent(tile,
+				TRANSFORM_COMPONENT,
 				TransformComponent{
 					Position: vector.Vec2{
 						X: float32(x) * (tileScale * tileSize),
@@ -67,7 +68,7 @@ func (g *Game) LoadAssets() error {
 				},
 			)
 
-			g.registry.AddComponent(tile, NewSpriteComponent(IMG_Tilemap, tileSize, tileSize, 0, false, srcRectX, srcRectY))
+			g.registry.AddComponent(tile, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tilemap, tileSize, tileSize, 0, false, srcRectX, srcRectY))
 		}
 	}
 

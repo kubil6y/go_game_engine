@@ -35,12 +35,12 @@ type Game struct {
 }
 
 func NewGame() *Game {
-	logger := logger.New(logger.WithLogLevel(logger.LevelDebug))
+	logger := logger.New(logger.WithLogLevel(logger.LEVEL_DEBUG))
 	return &Game{
 		windowWidth:  WIDTH,
 		windowHeight: HEIGHT,
 		logger:       logger,
-		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger, componentTypeRegistry, systemTypeRegistry),
+		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger),
 		assetStore:   asset_store.New(),
 		events:       eventbus.NewEventBus(),
 	}
@@ -83,15 +83,7 @@ func (g *Game) Initialize() error {
 }
 
 func (g *Game) Setup() {
-	g.RegisterComponents()
 	g.LoadLevel()
-}
-
-func (g *Game) RegisterComponents() {
-	g.registry.RegisterComponent(SpriteComponent{})
-	g.registry.RegisterComponent(TransformComponent{})
-	g.registry.RegisterComponent(BoxColliderComponent{})
-	g.registry.RegisterComponent(RigidbodyComponent{})
 }
 
 func (g *Game) LoadLevel() {
@@ -100,13 +92,13 @@ func (g *Game) LoadLevel() {
 	}
 
 	tank := g.registry.CreateEntity()
-	g.registry.AddComponent(tank, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
-	g.registry.AddComponent(tank, TransformComponent{
+	g.registry.AddComponent(tank, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
+	g.registry.AddComponent(tank, TRANSFORM_COMPONENT, TransformComponent{
 		Position: vector.Vec2{X: 300, Y: 300},
 		Scale:    vector.Vec2{X: 1, Y: 1},
 		Rotation: 0,
 	})
-	g.registry.AddComponent(tank, RigidbodyComponent{
+	g.registry.AddComponent(tank, RIGIDBODY_COMPONENT, RigidbodyComponent{
 		Velocity: vector.Vec2{X: 100, Y: 0},
 	})
 
@@ -115,8 +107,8 @@ func (g *Game) LoadLevel() {
 	movementSystem := NewMovementSystem(g.logger, &g.registry)
 
 	// Register systems
-	g.registry.AddSystem(movementSystem)
-	g.registry.AddSystem(renderSystem)
+	g.registry.AddSystem(MOVEMENT_SYSTEM, movementSystem)
+	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
 }
 
 func (g *Game) Run() {
@@ -159,8 +151,7 @@ func (g *Game) Update() {
 
 	g.registry.Update()
 
-	movementSystemID, _ := systemTypeRegistry.Get(&MovementSystem{})
-	movementSystem := g.registry.GetSystem(movementSystemID).(*MovementSystem)
+	movementSystem := g.registry.GetSystem(MOVEMENT_SYSTEM).(*MovementSystem)
 	movementSystem.Update(dt)
 }
 
@@ -168,8 +159,7 @@ func (g *Game) Render() {
 	g.renderer.SetDrawColor(0, 0, 0, 0)
 	g.renderer.Clear()
 
-	renderSystemID, _ := systemTypeRegistry.Get(&RenderSystem{})
-	renderSystem := g.registry.GetSystem(renderSystemID).(*RenderSystem)
+	renderSystem := g.registry.GetSystem(RENDER_SYSTEM).(*RenderSystem)
 	renderSystem.Update()
 
 	g.renderer.Present()

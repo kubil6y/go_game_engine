@@ -1,8 +1,6 @@
 package main
 
 import (
-	"math"
-
 	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/vector"
@@ -10,12 +8,14 @@ import (
 )
 
 const (
-	MAX_COMPONENTS_AMOUNT = 32
+	SPRITE_COMPONENT ecs.ComponentTypeID = iota
+    BOX_COLLIDER_COMPONENT
+    TRANSFORM_COMPONENT
+    RIGIDBODY_COMPONENT
 )
 
-var (
-	componentTypeRegistry = ecs.NewTypeRegistry(MAX_COMPONENTS_AMOUNT)
-	systemTypeRegistry    = ecs.NewTypeRegistry(math.MaxInt)
+const (
+	MAX_COMPONENTS_AMOUNT = 32
 )
 
 type SpriteComponent struct {
@@ -45,8 +45,8 @@ func NewSpriteComponent(assetID asset_store.AssetID, width, height, zIndex int, 
 	}
 }
 
-func (c SpriteComponent) GetID() (int, error) {
-	return componentTypeRegistry.Get(c)
+func (c SpriteComponent) GetID() int {
+	return int(SPRITE_COMPONENT)
 }
 
 func (c SpriteComponent) String() string {
@@ -59,8 +59,8 @@ type TransformComponent struct {
 	Rotation float32
 }
 
-func (c TransformComponent) GetID() (int, error) {
-	return componentTypeRegistry.Get(c)
+func (c TransformComponent) GetID() int {
+    return int(TRANSFORM_COMPONENT)
 }
 
 func (c TransformComponent) String() string {
@@ -73,8 +73,8 @@ type BoxColliderComponent struct {
 	Offset vector.Vec2
 }
 
-func (c BoxColliderComponent) GetID() (int, error) {
-	return componentTypeRegistry.Get(c)
+func (c BoxColliderComponent) GetID() int {
+	return int(BOX_COLLIDER_COMPONENT)
 }
 
 func (c BoxColliderComponent) String() string {
@@ -85,8 +85,8 @@ type RigidbodyComponent struct {
 	Velocity vector.Vec2
 }
 
-func (c RigidbodyComponent) GetID() (int, error) {
-	return componentTypeRegistry.Get(c)
+func (c RigidbodyComponent) GetID() int {
+    return int(RIGIDBODY_COMPONENT)
 }
 
 func (c RigidbodyComponent) String() string {

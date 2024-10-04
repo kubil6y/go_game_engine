@@ -12,22 +12,22 @@ import (
 type LogLevel int
 
 const (
-	LevelDebug LogLevel = iota
-	LevelInfo
-	LevelError
-	LevelFatal
-	LevelOff
+	LEVEL_DEBUG LogLevel = iota
+	LEVEL_INFO
+	LEVEL_ERROR
+	LEVEL_FATAL
+	LEVEL_OFF
 )
 
 func (l LogLevel) String() string {
 	switch l {
-	case LevelDebug:
+	case LEVEL_DEBUG:
 		return "DEBUG"
-	case LevelInfo:
+	case LEVEL_INFO:
 		return "INFO"
-	case LevelError:
+	case LEVEL_ERROR:
 		return "ERROR"
-	case LevelFatal:
+	case LEVEL_FATAL:
 		return "FATAL"
 	default:
 		panic("Invalid log level")
@@ -44,13 +44,13 @@ const (
 
 func getLevelColor(level LogLevel) string {
 	switch level {
-	case LevelDebug:
+	case LEVEL_DEBUG:
 		return Green
-	case LevelInfo:
+	case LEVEL_INFO:
 		return Blue
-	case LevelError:
+	case LEVEL_ERROR:
 		return Red
-	case LevelFatal:
+	case LEVEL_FATAL:
 		return Red
 	default:
 		return Reset
@@ -68,7 +68,7 @@ type Logger struct {
 func New(opts ...LoggerOption) *Logger {
 	l := &Logger{
 		out:      os.Stdout,
-		minLevel: LevelInfo,
+		minLevel: LEVEL_INFO,
 		mu:       sync.Mutex{},
 	}
 	for _, opt := range opts {
@@ -85,21 +85,21 @@ func WithLogLevel(minLevel LogLevel) LoggerOption {
 }
 
 func (l *Logger) Debug(message string, properties map[string]any) {
-	l.print(LevelDebug, message, properties)
+	l.print(LEVEL_DEBUG, message, properties)
 }
 
 func (l *Logger) Info(message string, properties map[string]any) {
-	l.print(LevelInfo, message, properties)
+	l.print(LEVEL_INFO, message, properties)
 }
 
 func (l *Logger) Error(err error, message string, properties map[string]any) {
 	wrapped := fmt.Errorf("%s: %w", message, err)
-	l.print(LevelError, wrapped.Error(), properties)
+	l.print(LEVEL_ERROR, wrapped.Error(), properties)
 }
 
 func (l *Logger) Fatal(err error, message string, properties map[string]any) {
 	wrapped := fmt.Errorf("%s: %w", message, err)
-	l.print(LevelFatal, wrapped.Error(), properties)
+	l.print(LEVEL_FATAL, wrapped.Error(), properties)
 	os.Exit(1)
 }
 
@@ -114,7 +114,7 @@ func (l *Logger) print(level LogLevel, message string, properties map[string]any
 		logMessage += " | Properties: " + fmt.Sprintf("%+v", properties)
 	}
 
-	if level >= LevelError {
+	if level >= LEVEL_ERROR {
 		logMessage += "\n" + string(debug.Stack())
 	}
 
