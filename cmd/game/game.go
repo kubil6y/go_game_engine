@@ -35,7 +35,7 @@ type Game struct {
 }
 
 func NewGame() *Game {
-	logger := logger.New(logger.WithLogLevel(logger.LevelDebug))
+	logger := logger.New(logger.WithLogLevel(logger.LevelInfo))
 	return &Game{
 		windowWidth:  WIDTH,
 		windowHeight: HEIGHT,
@@ -83,7 +83,15 @@ func (g *Game) Initialize() error {
 }
 
 func (g *Game) Setup() {
+    g.RegisterComponents()
 	g.LoadLevel()
+}
+
+func (g *Game) RegisterComponents() {
+    g.registry.RegisterComponent(SpriteComponent{})
+    g.registry.RegisterComponent(TransformComponent{})
+    g.registry.RegisterComponent(BoxColliderComponent{})
+    g.registry.RegisterComponent(RigidBodyComponent{})
 }
 
 func (g *Game) LoadLevel() {
@@ -93,7 +101,6 @@ func (g *Game) LoadLevel() {
 	// NOTE: all the components must be registered beforehand to entities
 	// before they are consumed by systems.
 	tank := g.registry.CreateEntity()
-	tank2 := g.registry.CreateEntity()
 
 	g.registry.AddComponent(tank, SpriteComponent{
 		Name: "tank-sprite",
@@ -103,13 +110,12 @@ func (g *Game) LoadLevel() {
 		Height: 50,
 		Offset: vector.NewZeroVec2(),
 	})
-	g.registry.AddComponent(tank2, BoxColliderComponent{})
 
 	// Create systems
 	printSystem := NewPrintSystem(g.logger, &g.registry)
 	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
 
-	// Register system
+	// Register systems
 	g.registry.AddSystem(printSystem)
 	g.registry.AddSystem(renderSystem)
 }

@@ -69,7 +69,7 @@ func (r *Registry) CreateEntity() Entity {
 		if entityID >= len(r.entityComponentSignatures) {
 			newSize := entityID + 1 // This is insane but thats the code in pikuma.com
 			// newSize := int(float32(len(r.entityComponentSignatures)) * 1.5)
-			r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
+			// r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
 			newSignatureSlice := make([]bitset.Bitset32, newSize)
 			for i := 0; i < len(r.entityComponentSignatures); i++ {
 				newSignatureSlice[i] = r.entityComponentSignatures[i]
@@ -114,10 +114,8 @@ func (r *Registry) KillEntity(entity Entity) {
 	}
 }
 
-// COMPONENT MANAGEMENT ////////////////////
-func (r *Registry) AddComponent(entity Entity, component Component) error {
-	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Register(component)
+func (r *Registry) RegisterComponent(component Component) error {
+	_, err := r.componentTypeRegistry.Register(component)
 	if err != nil {
 		switch err {
 		case ErrNilItem:
@@ -128,7 +126,21 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 			return nil
 		}
 	}
+	componentID, err := component.GetID()
+	if err != nil {
+		return err
+	}
+	r.logger.Info(fmt.Sprintf("%s{%d} is registered", component.String(), componentID), nil)
+	return nil
+}
 
+// COMPONENT MANAGEMENT ////////////////////
+func (r *Registry) AddComponent(entity Entity, component Component) error {
+	entityID := entity.GetID()
+	componentID, err := r.componentTypeRegistry.Get(component)
+	if err != nil {
+		return err
+	}
 	if componentID >= len(r.componentPools) {
 		newSize := componentID + 1
 		r.componentPools = utils.ResizeArray(r.componentPools, newSize)
@@ -153,7 +165,7 @@ func (r *Registry) AddComponent(entity Entity, component Component) error {
 
 func (r *Registry) RemoveComponent(entity Entity, component Component) {
 	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Register(component)
+	componentID, err := r.componentTypeRegistry.Get(component)
 	if err != nil {
 		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
 		return
@@ -163,7 +175,7 @@ func (r *Registry) RemoveComponent(entity Entity, component Component) {
 
 func (r *Registry) HasComponent(entity Entity, component Component) bool {
 	entityID := entity.GetID()
-	componentID, err := r.componentTypeRegistry.Register(component)
+	componentID, err := r.componentTypeRegistry.Get(component)
 	if err != nil {
 		r.logger.Error(err, fmt.Sprintf("Failed to retrieve %s component", component), nil)
 		return false
@@ -191,7 +203,7 @@ func (r *Registry) AddSystem(system System) {
 	_, exists := r.systems[systemID]
 	if !exists {
 		r.systems[systemID] = system
-		r.logger.Debug(fmt.Sprintf("%s{%d} registered", system.GetName(), systemID), nil)
+		r.logger.Info(fmt.Sprintf("%s{%d} is registered", system.GetName(), systemID), nil)
 	}
 }
 
