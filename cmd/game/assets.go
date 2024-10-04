@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 
@@ -25,6 +24,7 @@ const (
 
 func (g *Game) LoadAssets() error {
 	g.assetStore.AddTexture(g.renderer, IMG_Tank, "./assets/images/tank-panther-right.png")
+	g.assetStore.AddTexture(g.renderer, IMG_Tilemap, "./assets/tilemaps/jungle.png")
 
 	// render the map
 	mapFile, err := os.Open("./assets/tilemaps/jungle.map")
@@ -42,26 +42,22 @@ func (g *Game) LoadAssets() error {
 				g.logger.Fatal(err, "Error reading map file", nil)
 				return err
 			}
-
-			srcRectY, _ := strconv.Atoi(string(ch)) // Convert char to int
+			srcRectY, _ := strconv.Atoi(string(ch))
 			srcRectY *= tileSize
 
-			// Read second character
 			ch, err = reader.ReadByte()
 			if err != nil {
-				fmt.Println("Error reading file:", err)
+				g.logger.Fatal(err, "Error reading map file", nil)
 				return err
 			}
-
-			srcRectX, _ := strconv.Atoi(string(ch)) // Convert char to int
+			srcRectX, _ := strconv.Atoi(string(ch))
 			srcRectX *= tileSize
 
-			// Ignore the next character
 			reader.Discard(1)
 
 			tile := g.registry.CreateEntity()
 			g.registry.AddComponent(tile,
-				&TransformComponent{
+				TransformComponent{
 					Position: vector.Vec2{
 						X: float32(x) * (tileScale * tileSize),
 						Y: float32(y) * (tileScale * tileSize),

@@ -103,19 +103,15 @@ func (g *Game) LoadLevel() {
 		Height: 50,
 		Offset: vector.NewZeroVec2(),
 	})
-
-	// g.registry.AddComponent(tank2, SpriteComponent{
-	// 	Name: "tank-sprite",
-	// })
 	g.registry.AddComponent(tank2, BoxColliderComponent{})
 
 	// Create systems
 	printSystem := NewPrintSystem(g.logger, &g.registry)
-	anotherSystem := NewAnotherSystem(g.logger, &g.registry)
+	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
 
 	// Register system
 	g.registry.AddSystem(printSystem)
-	g.registry.AddSystem(anotherSystem)
+	g.registry.AddSystem(renderSystem)
 }
 
 func (g *Game) Run() {
@@ -185,6 +181,10 @@ func (g *Game) Render() {
 		H: 32,
 	}
 	g.renderer.CopyEx(g.assetStore.GetTexture(IMG_Tank), nil, &renderRect, 0, nil, sdl.FLIP_NONE)
+
+	renderSystemID, _ := systemTypeRegistry.Get(&RenderSystem{})
+	renderSystem := g.registry.GetSystem(renderSystemID).(*RenderSystem)
+	renderSystem.Update()
 
 	g.renderer.Present()
 }

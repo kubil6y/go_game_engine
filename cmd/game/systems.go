@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type PrintSystem struct {
@@ -31,32 +31,39 @@ func (s *PrintSystem) Update(dt float32) {
 	// for _, entity := range s.GetSystemEntities() {
 	// 	sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
 	// 	s.fooState++
-	// 	fmt.Printf("entity{%d} sprite name: %s fooState: %d\n", entity.GetID(), sprite.Name, s.fooState)
 	// }
 }
 
-type AnotherSystem struct {
+type RenderSystem struct {
 	*ecs.BaseSystem
-	fooState int
+	renderer   *sdl.Renderer
+	assetStore *asset_store.AssetStore
 }
 
-func NewAnotherSystem(logger *logger.Logger, registry *ecs.Registry) *AnotherSystem {
+func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer, assetStore *asset_store.AssetStore) *RenderSystem {
 	bs := bitset.NewBitset32()
 	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
-	return &AnotherSystem{
-		BaseSystem: ecs.NewBaseSystem("AnotherSystem", logger, registry, bs),
-		fooState:   88,
+	bs.Set(componentTypeRegistry.Getx(TransformComponent{}))
+	return &RenderSystem{
+		BaseSystem: ecs.NewBaseSystem("RenderSystem", logger, registry, bs),
+		renderer:   renderer,
+		assetStore: assetStore,
 	}
 }
 
-func (s AnotherSystem) GetName() string {
+func (s RenderSystem) GetName() string {
 	return s.Name
 }
 
-func (s *AnotherSystem) Update(dt float32) {
+func (s *RenderSystem) Update() {
 	for _, entity := range s.GetSystemEntities() {
 		sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
-		s.fooState++
-		fmt.Printf("entity id: %d sprite name: %s fooState: %d\n", entity.GetID(), sprite.Name, s.fooState)
+		tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
+		var dstRect sdl.Rect
+		dstRect.X = int32(tf.Position.X)
+		dstRect.Y = int32(tf.Position.Y)
+		dstRect.W = int32(sprite.Width * int(tf.Scale.X))
+		dstRect.H = int32(sprite.Height * int(tf.Scale.Y))
+		s.renderer.CopyEx(s.assetStore.GetTexture(IMG_Tilemap), &sprite.SrcRect, &dstRect, 0, nil, sdl.FLIP_NONE)
 	}
 }
