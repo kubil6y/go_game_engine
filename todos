@@ -1,6 +1,6 @@
 ## ECS
 --- urgent ---
-[ ] components gets registered when they are added to entities. 
+[x] components gets registered when they are added to entities. 
 this is wrong. i should register component independently.
 --- 
 

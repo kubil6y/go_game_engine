@@ -28,7 +28,7 @@ type SpriteComponent struct {
 	SrcRect sdl.Rect
 }
 
-func NewSpriteComponent(assetID asset_store.AssetID, width, height, zIndex, srcRectX, srcRectY int, isFixed bool) SpriteComponent {
+func NewSpriteComponent(assetID asset_store.AssetID, width, height, zIndex int, isFixed bool, srcRectX, srcRectY int) SpriteComponent {
 	return SpriteComponent{
 		Name:    "SpriteComponent",
 		AssetID: assetID,

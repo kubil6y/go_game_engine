@@ -83,32 +83,28 @@ func (g *Game) Initialize() error {
 }
 
 func (g *Game) Setup() {
-    g.RegisterComponents()
+	g.RegisterComponents()
 	g.LoadLevel()
 }
 
 func (g *Game) RegisterComponents() {
-    g.registry.RegisterComponent(SpriteComponent{})
-    g.registry.RegisterComponent(TransformComponent{})
-    g.registry.RegisterComponent(BoxColliderComponent{})
-    g.registry.RegisterComponent(RigidBodyComponent{})
+	g.registry.RegisterComponent(SpriteComponent{})
+	g.registry.RegisterComponent(TransformComponent{})
+	g.registry.RegisterComponent(BoxColliderComponent{})
+	g.registry.RegisterComponent(RigidBodyComponent{})
 }
 
 func (g *Game) LoadLevel() {
 	if err := g.LoadAssets(); err != nil {
 		g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
 	}
-	// NOTE: all the components must be registered beforehand to entities
-	// before they are consumed by systems.
 	tank := g.registry.CreateEntity()
 
-	g.registry.AddComponent(tank, SpriteComponent{
-		Name: "tank-sprite",
-	})
-	g.registry.AddComponent(tank, BoxColliderComponent{
-		Width:  10,
-		Height: 50,
-		Offset: vector.NewZeroVec2(),
+	g.registry.AddComponent(tank, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
+	g.registry.AddComponent(tank, TransformComponent{
+		Position: vector.Vec2{X: 300, Y: 300},
+		Scale:    vector.Vec2{X: 1, Y: 1},
+		Rotation: 0,
 	})
 
 	// Create systems
@@ -168,25 +164,6 @@ func (g *Game) Update() {
 func (g *Game) Render() {
 	g.renderer.SetDrawColor(0, 0, 0, 0)
 	g.renderer.Clear()
-
-	g.renderer.SetDrawColor(255, 255, 255, 255)
-	points := []sdl.Point{
-		{X: 400, Y: 100}, // Top vertex
-		{X: 300, Y: 500}, // Bottom left vertex
-		{X: 500, Y: 500}, // Bottom right vertex
-		{X: 400, Y: 100}, // Closing the triangle
-	}
-
-	// Draw the triangle
-	g.renderer.DrawLines(points)
-
-	renderRect := sdl.Rect{
-		X: 500,
-		Y: 300,
-		W: 32,
-		H: 32,
-	}
-	g.renderer.CopyEx(g.assetStore.GetTexture(IMG_Tank), nil, &renderRect, 0, nil, sdl.FLIP_NONE)
 
 	renderSystemID, _ := systemTypeRegistry.Get(&RenderSystem{})
 	renderSystem := g.registry.GetSystem(renderSystemID).(*RenderSystem)

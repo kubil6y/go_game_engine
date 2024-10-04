@@ -23,8 +23,8 @@ const (
 )
 
 func (g *Game) LoadAssets() error {
-	g.assetStore.AddTexture(g.renderer, IMG_Tank, "./assets/images/tank-panther-right.png")
 	g.assetStore.AddTexture(g.renderer, IMG_Tilemap, "./assets/tilemaps/jungle.png")
+	g.assetStore.AddTexture(g.renderer, IMG_Tank, "./assets/images/tank-panther-right.png")
 
 	// render the map
 	mapFile, err := os.Open("./assets/tilemaps/jungle.map")
@@ -67,7 +67,7 @@ func (g *Game) LoadAssets() error {
 				},
 			)
 
-			g.registry.AddComponent(tile, NewSpriteComponent(IMG_Tilemap, tileSize, tileSize, 0, srcRectX, srcRectY, false))
+			g.registry.AddComponent(tile, NewSpriteComponent(IMG_Tilemap, tileSize, tileSize, 0, false, srcRectX, srcRectY))
 		}
 	}
 

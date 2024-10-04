@@ -67,9 +67,10 @@ func (r *Registry) CreateEntity() Entity {
 		r.numEntities++
 		entityID = r.numEntities
 		if entityID >= len(r.entityComponentSignatures) {
-			newSize := entityID + 1 // This is insane but thats the code in pikuma.com
-			// newSize := int(float32(len(r.entityComponentSignatures)) * 1.5)
-			// r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
+            // WARNING
+			// newSize := entityID + 1 // This is insane but thats the code in pikuma.com
+			newSize := int(float32(len(r.entityComponentSignatures)) * 1.5)
+			r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
 			newSignatureSlice := make([]bitset.Bitset32, newSize)
 			for i := 0; i < len(r.entityComponentSignatures); i++ {
 				newSignatureSlice[i] = r.entityComponentSignatures[i]

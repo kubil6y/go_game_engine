@@ -56,14 +56,26 @@ func (s RenderSystem) GetName() string {
 }
 
 func (s *RenderSystem) Update() {
-	for _, entity := range s.GetSystemEntities() {
-		sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
-		tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
-		var dstRect sdl.Rect
-		dstRect.X = int32(tf.Position.X)
-		dstRect.Y = int32(tf.Position.Y)
-		dstRect.W = int32(sprite.Width * int(tf.Scale.X))
-		dstRect.H = int32(sprite.Height * int(tf.Scale.Y))
-		s.renderer.CopyEx(s.assetStore.GetTexture(IMG_Tilemap), &sprite.SrcRect, &dstRect, 0, nil, sdl.FLIP_NONE)
+	var currZIndex int
+	var maxZIndex int
+
+	for currZIndex <= maxZIndex {
+		for _, entity := range s.GetSystemEntities() {
+			sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
+			if maxZIndex < sprite.ZIndex {
+				maxZIndex = sprite.ZIndex
+			}
+			if currZIndex != sprite.ZIndex {
+				continue
+			}
+			tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
+			var dstRect sdl.Rect
+			dstRect.X = int32(tf.Position.X)
+			dstRect.Y = int32(tf.Position.Y)
+			dstRect.W = int32(sprite.Width * int(tf.Scale.X))
+			dstRect.H = int32(sprite.Height * int(tf.Scale.Y))
+			s.renderer.CopyEx(s.assetStore.GetTexture(sprite.AssetID), &sprite.SrcRect, &dstRect, 0, nil, sdl.FLIP_NONE)
+		}
+		currZIndex++
 	}
 }
