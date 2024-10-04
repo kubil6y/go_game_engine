@@ -8,32 +8,6 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-type PrintSystem struct {
-	*ecs.BaseSystem
-	fooState int
-}
-
-func NewPrintSystem(logger *logger.Logger, registry *ecs.Registry) *PrintSystem {
-	bs := bitset.NewBitset32()
-	bs.Set(componentTypeRegistry.Getx(SpriteComponent{}))
-	bs.Set(componentTypeRegistry.Getx(BoxColliderComponent{}))
-	return &PrintSystem{
-		BaseSystem: ecs.NewBaseSystem("PrintSystem", logger, registry, bs),
-		fooState:   88,
-	}
-}
-
-func (s PrintSystem) GetName() string {
-	return s.Name
-}
-
-func (s *PrintSystem) Update(dt float32) {
-	// for _, entity := range s.GetSystemEntities() {
-	// 	sprite := s.Registry.GetComponent(entity, SpriteComponent{}).(SpriteComponent)
-	// 	s.fooState++
-	// }
-}
-
 type RenderSystem struct {
 	*ecs.BaseSystem
 	renderer   *sdl.Renderer
@@ -77,5 +51,34 @@ func (s *RenderSystem) Update() {
 			s.renderer.CopyEx(s.assetStore.GetTexture(sprite.AssetID), &sprite.SrcRect, &dstRect, 0, nil, sdl.FLIP_NONE)
 		}
 		currZIndex++
+	}
+}
+
+type MovementSystem struct {
+	*ecs.BaseSystem
+	renderer   *sdl.Renderer
+	assetStore *asset_store.AssetStore
+}
+
+func NewMovementSystem(logger *logger.Logger, registry *ecs.Registry) *MovementSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(componentTypeRegistry.Getx(RigidbodyComponent{}))
+	bs.Set(componentTypeRegistry.Getx(TransformComponent{}))
+	return &MovementSystem{
+		BaseSystem: ecs.NewBaseSystem("MovementSystem", logger, registry, bs),
+	}
+}
+
+func (s MovementSystem) GetName() string {
+	return s.Name
+}
+
+func (s *MovementSystem) Update(dt float32) {
+	for _, entity := range s.GetSystemEntities() {
+		tf := s.Registry.GetComponent(entity, TransformComponent{}).(TransformComponent)
+		rb := s.Registry.GetComponent(entity, RigidbodyComponent{}).(RigidbodyComponent)
+		tf.Position.X += rb.Velocity.X * dt
+		tf.Position.Y += rb.Velocity.Y * dt
+        fmt.Printf(
 	}
 }

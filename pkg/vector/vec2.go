@@ -1,10 +1,17 @@
 // source: https://github.com/joonazan/vec2 (modified)
 package vector
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Vec2 struct {
 	X, Y float32
+}
+
+func (v Vec2) String() string {
+	return fmt.Sprintf("{%.2f,%.2f}", v.X, v.Y)
 }
 
 func NewVec2(x, y float32) Vec2 {

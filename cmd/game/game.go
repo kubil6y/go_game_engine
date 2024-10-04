@@ -35,7 +35,7 @@ type Game struct {
 }
 
 func NewGame() *Game {
-	logger := logger.New(logger.WithLogLevel(logger.LevelInfo))
+	logger := logger.New(logger.WithLogLevel(logger.LevelDebug))
 	return &Game{
 		windowWidth:  WIDTH,
 		windowHeight: HEIGHT,
@@ -91,28 +91,31 @@ func (g *Game) RegisterComponents() {
 	g.registry.RegisterComponent(SpriteComponent{})
 	g.registry.RegisterComponent(TransformComponent{})
 	g.registry.RegisterComponent(BoxColliderComponent{})
-	g.registry.RegisterComponent(RigidBodyComponent{})
+	g.registry.RegisterComponent(RigidbodyComponent{})
 }
 
 func (g *Game) LoadLevel() {
 	if err := g.LoadAssets(); err != nil {
 		g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
 	}
-	tank := g.registry.CreateEntity()
 
+	tank := g.registry.CreateEntity()
 	g.registry.AddComponent(tank, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(tank, TransformComponent{
 		Position: vector.Vec2{X: 300, Y: 300},
 		Scale:    vector.Vec2{X: 1, Y: 1},
 		Rotation: 0,
 	})
+	g.registry.AddComponent(tank, RigidbodyComponent{
+		Velocity: vector.Vec2{X: 100, Y: 0},
+	})
 
 	// Create systems
-	printSystem := NewPrintSystem(g.logger, &g.registry)
 	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
+	movementSystem := NewMovementSystem(g.logger, &g.registry)
 
 	// Register systems
-	g.registry.AddSystem(printSystem)
+	g.registry.AddSystem(movementSystem)
 	g.registry.AddSystem(renderSystem)
 }
 
@@ -156,9 +159,9 @@ func (g *Game) Update() {
 
 	g.registry.Update()
 
-	printSystemID, _ := systemTypeRegistry.Get(&PrintSystem{})
-	printSystem := g.registry.GetSystem(printSystemID).(*PrintSystem)
-	printSystem.Update(dt)
+	movementSystemID, _ := systemTypeRegistry.Get(&MovementSystem{})
+	movementSystem := g.registry.GetSystem(movementSystemID).(*MovementSystem)
+	movementSystem.Update(dt)
 }
 
 func (g *Game) Render() {

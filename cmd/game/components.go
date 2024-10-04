@@ -81,14 +81,14 @@ func (c BoxColliderComponent) String() string {
 	return "BoxColliderComponent"
 }
 
-type RigidBodyComponent struct {
+type RigidbodyComponent struct {
 	Velocity vector.Vec2
 }
 
-func (c RigidBodyComponent) GetID() (int, error) {
+func (c RigidbodyComponent) GetID() (int, error) {
 	return componentTypeRegistry.Get(c)
 }
 
-func (c RigidBodyComponent) String() string {
+func (c RigidbodyComponent) String() string {
 	return "RigidBodyComponent"
 }
