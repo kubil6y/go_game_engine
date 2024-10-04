@@ -3,11 +3,16 @@ package ecs
 import (
 	"container/list"
 	"fmt"
+	"math"
+	"reflect"
 
-	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 )
+
+// NOTE:
+// - Claude.AI helped a lot with reflect stuff lul
+// - Resizing slices +1 is the original code im just converting to cpp to go
 
 type SystemTypeID int
 type ComponentTypeID int
@@ -34,7 +39,7 @@ type Registry struct {
 	// [index = entity id]
 	entityComponentSignatures []bitset.Bitset32
 	// [index = component id] [index = entity id]
-	componentPools     []*[]Component
+	componentPools     map[ComponentTypeID]any
 	systems            map[SystemTypeID]System
 	entitiesToBeAdded  []Entity
 	entitiesToBeKilled []Entity
@@ -46,7 +51,7 @@ func NewRegistry(maxComponentCount int, logger *logger.Logger) *Registry {
 	return &Registry{
 		numEntities:               0,
 		entityComponentSignatures: make([]bitset.Bitset32, 10),
-		componentPools:            make([]*[]Component, 10),
+		componentPools:            make(map[ComponentTypeID]any),
 		systems:                   make(map[SystemTypeID]System),
 		entitiesToBeAdded:         make([]Entity, 0),
 		entitiesToBeKilled:        make([]Entity, 0),
@@ -62,8 +67,7 @@ func (r *Registry) CreateEntity() Entity {
 		r.numEntities++
 		entityID = r.numEntities
 		if entityID >= len(r.entityComponentSignatures) {
-			// WARNING
-			// newSize := entityID + 1 // This is insane but thats the code in pikuma.com
+			// WARNING newSize := entityID + 1 // This is insane but thats the code in pikuma.com
 			newSize := int(float32(len(r.entityComponentSignatures)) * 1.5)
 			r.logger.Info(fmt.Sprintf("resize entityComponentSignatures %d -> %d", len(r.entityComponentSignatures), newSize), nil)
 			newSignatureSlice := make([]bitset.Bitset32, newSize)
@@ -111,28 +115,46 @@ func (r *Registry) KillEntity(entity Entity) {
 }
 
 // COMPONENT MANAGEMENT ////////////////////
-func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, component Component) error {
+func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, component interface{}) error {
 	entityID := entity.GetID()
-	if int(componentID) >= len(r.componentPools) {
-		newSize := componentID + 1
-		r.componentPools = utils.ResizeArray(r.componentPools, int(newSize))
+
+	// Check if the component pool exists, if not, create it
+	if _, exists := r.componentPools[componentID]; !exists {
+		initialCapacity := max(r.numEntities, 8) // Start with at least 8 elements
+		r.componentPools[componentID] = reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(component)), 0, initialCapacity).Interface()
 	}
 
-	if r.componentPools[componentID] == nil {
-		newComponentPool := make([]Component, r.numEntities)
-		r.componentPools[componentID] = &newComponentPool
+	// Get the component pool and ensure it's large enough
+	pool := reflect.ValueOf(r.componentPools[componentID])
+	if entityID >= pool.Cap() {
+		newCapacity := max(entityID+1, int(math.Ceil(float64(pool.Cap())*1.5)))
+		newPool := reflect.MakeSlice(pool.Type(), pool.Len(), newCapacity)
+		reflect.Copy(newPool, pool)
+		pool = newPool
+		r.componentPools[componentID] = pool.Interface()
 	}
 
-	componentPool := r.componentPools[componentID]
-	if entityID >= len(*componentPool) {
-		newSize := entityID + 1 // Resize to at least accommodate the new entityID
-		*componentPool = utils.ResizeArray(*componentPool, newSize)
+	// Extend the slice if necessary
+	if entityID >= pool.Len() {
+		pool = pool.Slice(0, entityID+1)
+		r.componentPools[componentID] = pool.Interface()
 	}
-	(*componentPool)[entityID] = component
 
+	// Add the component to the pool
+	pool.Index(entityID).Set(reflect.ValueOf(component))
+
+	// Update the entity's component signature
 	r.entityComponentSignatures[entityID].Set(int(componentID))
-	r.logger.Debug(fmt.Sprintf("%s{%d} added to entity{%d}", component, componentID, entityID), nil)
+
 	return nil
+}
+
+// Helper function to find the maximum of two integers
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func (r *Registry) RemoveComponent(entity Entity, componentID ComponentTypeID) {
@@ -146,8 +168,14 @@ func (r *Registry) HasComponent(entity Entity, componentID ComponentTypeID) bool
 	return signature.IsSet(int(componentID))
 }
 
-func (r *Registry) GetComponent(entity Entity, componentID ComponentTypeID) Component {
-	return (*r.componentPools[componentID])[entity.GetID()]
+func (r *Registry) GetComponent(entity Entity, componentID ComponentTypeID) interface{} {
+	pool := reflect.ValueOf(r.componentPools[componentID])
+	return pool.Index(entity.GetID()).Interface()
+}
+
+func (r *Registry) GetComponentPtr(entity Entity, componentID ComponentTypeID) interface{} {
+	pool := reflect.ValueOf(r.componentPools[componentID])
+	return pool.Index(entity.GetID()).Addr().Interface()
 }
 
 // SYSTEM MANAGEMENT ////////////////////

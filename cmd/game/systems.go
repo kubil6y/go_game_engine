@@ -11,6 +11,7 @@ import (
 const (
 	RENDER_SYSTEM ecs.SystemTypeID = iota
 	MOVEMENT_SYSTEM
+	ANIMATION_SYSTEM
 )
 
 type RenderSystem struct {
@@ -23,6 +24,7 @@ func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sd
 	bs := bitset.NewBitset32()
 	bs.Set(int(SPRITE_COMPONENT))
 	bs.Set(int(TRANSFORM_COMPONENT))
+
 	return &RenderSystem{
 		BaseSystem: ecs.NewBaseSystem("RenderSystem", logger, registry, bs),
 		renderer:   renderer,
@@ -34,20 +36,20 @@ func (s RenderSystem) GetName() string {
 	return s.Name
 }
 
-func (s *RenderSystem) Update() {
+func (s *RenderSystem) Update(dt float32) {
 	var currZIndex int
 	var maxZIndex int
 
 	for currZIndex <= maxZIndex {
 		for _, entity := range s.GetSystemEntities() {
-			sprite := s.Registry.GetComponent(entity, SPRITE_COMPONENT).(SpriteComponent)
+			sprite := s.Registry.GetComponentPtr(entity, SPRITE_COMPONENT).(*SpriteComponent)
 			if maxZIndex < sprite.ZIndex {
 				maxZIndex = sprite.ZIndex
 			}
 			if currZIndex != sprite.ZIndex {
 				continue
 			}
-			tf := s.Registry.GetComponent(entity, TRANSFORM_COMPONENT).(TransformComponent)
+			tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
 			var dstRect sdl.Rect
 			dstRect.X = int32(tf.Position.X)
 			dstRect.Y = int32(tf.Position.Y)
@@ -80,9 +82,40 @@ func (s MovementSystem) GetName() string {
 
 func (s *MovementSystem) Update(dt float32) {
 	for _, entity := range s.GetSystemEntities() {
-		tf := s.Registry.GetComponent(entity, TRANSFORM_COMPONENT).(TransformComponent)
-		rb := s.Registry.GetComponent(entity, RIGIDBODY_COMPONENT).(RigidbodyComponent)
+		tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
+		rb := s.Registry.GetComponentPtr(entity, RIGIDBODY_COMPONENT).(*RigidbodyComponent)
 		tf.Position.X += rb.Velocity.X * dt
 		tf.Position.Y += rb.Velocity.Y * dt
+	}
+}
+
+type AnimationSystem struct {
+	*ecs.BaseSystem
+	renderer   *sdl.Renderer
+	assetStore *asset_store.AssetStore
+}
+
+func NewAnimationSystem(logger *logger.Logger, registry *ecs.Registry) *AnimationSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(int(SPRITE_COMPONENT))
+	bs.Set(int(ANIMATION_COMPONENT))
+	return &AnimationSystem{
+		BaseSystem: ecs.NewBaseSystem("AnimationSystem", logger, registry, bs),
+	}
+}
+
+func (s AnimationSystem) GetName() string {
+	return s.Name
+}
+
+func (s *AnimationSystem) Update(dt float32) {
+	for _, entity := range s.GetSystemEntities() {
+		sprite := s.Registry.GetComponentPtr(entity, SPRITE_COMPONENT).(*SpriteComponent)
+		animation := s.Registry.GetComponentPtr(entity, ANIMATION_COMPONENT).(*AnimationComponent)
+
+		animation.currentFrame = int((sdl.GetTicks() - animation.startTime)) *
+			animation.frameRateSpeed / 1000 %
+			animation.numFrames
+		sprite.SrcRect.X = int32(animation.currentFrame * sprite.Width)
 	}
 }

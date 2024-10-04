@@ -13,7 +13,7 @@ type System interface {
 	RemoveEntityFromSystem(entity Entity)
 	GetSystemEntities() []Entity
 	GetSignature() *bitset.Bitset32
-	RequireComponent(componentID int)
+	Update(dt float32)
 }
 
 type BaseSystem struct {
@@ -32,6 +32,11 @@ func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitse
 		Logger:             logger,
 		Registry:           registry,
 	}
+}
+
+func (s *BaseSystem) Update(dt float32) {
+	// This method is meant to be overridden by derived systems
+	s.Logger.Debug(fmt.Sprintf("Update method not implemented for %s", s.Name), nil)
 }
 
 func (s *BaseSystem) AddEntityToSystem(entity Entity) {
@@ -58,8 +63,4 @@ func (s *BaseSystem) GetSystemEntities() []Entity {
 
 func (s *BaseSystem) GetSignature() *bitset.Bitset32 {
 	return s.componentSignature
-}
-
-func (s *BaseSystem) RequireComponent(componentID int) {
-	s.componentSignature.Set(componentID)
 }

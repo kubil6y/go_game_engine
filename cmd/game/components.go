@@ -9,9 +9,10 @@ import (
 
 const (
 	SPRITE_COMPONENT ecs.ComponentTypeID = iota
-    BOX_COLLIDER_COMPONENT
-    TRANSFORM_COMPONENT
-    RIGIDBODY_COMPONENT
+	BOX_COLLIDER_COMPONENT
+	TRANSFORM_COMPONENT
+	RIGIDBODY_COMPONENT
+	ANIMATION_COMPONENT
 )
 
 const (
@@ -60,7 +61,7 @@ type TransformComponent struct {
 }
 
 func (c TransformComponent) GetID() int {
-    return int(TRANSFORM_COMPONENT)
+	return int(TRANSFORM_COMPONENT)
 }
 
 func (c TransformComponent) String() string {
@@ -86,9 +87,38 @@ type RigidbodyComponent struct {
 }
 
 func (c RigidbodyComponent) GetID() int {
-    return int(RIGIDBODY_COMPONENT)
+	return int(RIGIDBODY_COMPONENT)
 }
 
 func (c RigidbodyComponent) String() string {
 	return "RigidBodyComponent"
+}
+
+type AnimationComponent struct {
+	numFrames      int
+	currentFrame   int
+	frameRateSpeed int // ms
+	loop           bool
+	startTime      uint32
+}
+
+func NewAnimationComponent(numFrames, frameRateSpeed int, loop bool) AnimationComponent {
+	if numFrames < 1 || frameRateSpeed < 0 {
+		panic("invalid parameter")
+	}
+	return AnimationComponent{
+		numFrames:      numFrames,
+		currentFrame:   0,
+		frameRateSpeed: frameRateSpeed,
+		loop:           loop,
+		startTime:      sdl.GetTicks(),
+	}
+}
+
+func (c AnimationComponent) GetID() int {
+	return int(ANIMATION_COMPONENT)
+}
+
+func (c AnimationComponent) String() string {
+	return "AnimationComponent"
 }

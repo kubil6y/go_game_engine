@@ -99,16 +99,38 @@ func (g *Game) LoadLevel() {
 		Rotation: 0,
 	})
 	g.registry.AddComponent(tank, RIGIDBODY_COMPONENT, RigidbodyComponent{
-		Velocity: vector.Vec2{X: 100, Y: 0},
+		Velocity: vector.Vec2{X: -30, Y: 0},
+	})
+
+	tank2 := g.registry.CreateEntity()
+	g.registry.AddComponent(tank2, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
+	g.registry.AddComponent(tank2, TRANSFORM_COMPONENT, TransformComponent{
+		Position: vector.Vec2{X: 150, Y: 150},
+		Scale:    vector.Vec2{X: 1, Y: 1},
+		Rotation: 0,
+	})
+	g.registry.AddComponent(tank2, RIGIDBODY_COMPONENT, RigidbodyComponent{
+		Velocity: vector.Vec2{X: 30, Y: 0},
+	})
+
+	chopper := g.registry.CreateEntity()
+	g.registry.AddComponent(chopper, SPRITE_COMPONENT, NewSpriteComponent(IMG_Chopper, 32, 32, 1, false, 0, 0))
+	g.registry.AddComponent(chopper, ANIMATION_COMPONENT, NewAnimationComponent(2, 10, true))
+	g.registry.AddComponent(chopper, TRANSFORM_COMPONENT, TransformComponent{
+		Position: vector.Vec2{X: 50, Y: 50},
+		Scale:    vector.Vec2{X: 1, Y: 1},
+		Rotation: 0,
 	})
 
 	// Create systems
 	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
 	movementSystem := NewMovementSystem(g.logger, &g.registry)
+	animationSystem := NewAnimationSystem(g.logger, &g.registry)
 
 	// Register systems
 	g.registry.AddSystem(MOVEMENT_SYSTEM, movementSystem)
 	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
+	g.registry.AddSystem(ANIMATION_SYSTEM, animationSystem)
 }
 
 func (g *Game) Run() {
@@ -153,6 +175,8 @@ func (g *Game) Update() {
 
 	movementSystem := g.registry.GetSystem(MOVEMENT_SYSTEM).(*MovementSystem)
 	movementSystem.Update(dt)
+	animationSystem := g.registry.GetSystem(ANIMATION_SYSTEM).(*AnimationSystem)
+	animationSystem.Update(dt)
 }
 
 func (g *Game) Render() {
@@ -160,7 +184,7 @@ func (g *Game) Render() {
 	g.renderer.Clear()
 
 	renderSystem := g.registry.GetSystem(RENDER_SYSTEM).(*RenderSystem)
-	renderSystem.Update()
+	renderSystem.Update(0)
 
 	g.renderer.Present()
 }
