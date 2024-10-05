@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
@@ -10,8 +12,10 @@ import (
 
 const (
 	RENDER_SYSTEM ecs.SystemTypeID = iota
+	RENDER_COLLISION_SYSTEM
 	MOVEMENT_SYSTEM
 	ANIMATION_SYSTEM
+	COLLISION_SYSTEM
 )
 
 type RenderSystem struct {
@@ -117,5 +121,88 @@ func (s *AnimationSystem) Update(dt float32) {
 			animation.frameRateSpeed / 1000 %
 			animation.numFrames
 		sprite.SrcRect.X = int32(animation.currentFrame * sprite.Width)
+	}
+}
+
+type CollisionSystem struct {
+	*ecs.BaseSystem
+}
+
+func NewCollisionSystem(logger *logger.Logger, registry *ecs.Registry) *CollisionSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(int(TRANSFORM_COMPONENT))
+	bs.Set(int(BOX_COLLIDER_COMPONENT))
+	return &CollisionSystem{
+		BaseSystem: ecs.NewBaseSystem("CollisionSystem", logger, registry, bs),
+	}
+}
+
+func (s CollisionSystem) GetName() string {
+	return s.Name
+}
+
+func (s *CollisionSystem) Update(dt float32) {
+	entities := s.GetSystemEntities()
+	for i := 0; i < len(entities); i++ {
+		a := entities[i]
+		atf := s.Registry.GetComponentPtr(a, TRANSFORM_COMPONENT).(*TransformComponent)
+		acol := s.Registry.GetComponentPtr(a, BOX_COLLIDER_COMPONENT).(*BoxColliderComponent)
+		for j := 0; j < len(entities); j++ {
+			b := entities[j]
+			if a.GetID() == b.GetID() {
+				continue
+			}
+			btf := s.Registry.GetComponentPtr(b, TRANSFORM_COMPONENT).(*TransformComponent)
+			bcol := s.Registry.GetComponentPtr(b, BOX_COLLIDER_COMPONENT).(*BoxColliderComponent)
+			if CheckAABB(atf, btf, acol, bcol) {
+				s.Logger.Info(fmt.Sprintf("entity=%d and entity=%d is colliding", a.GetID(), b.GetID()), nil)
+			}
+		}
+	}
+}
+
+func CheckAABB(atf, btf *TransformComponent, acol, bcol *BoxColliderComponent) bool {
+	aMinX := atf.Position.X + acol.Offset.X*atf.Scale.X
+	aMaxX := aMinX + acol.Width*atf.Scale.X
+	aMinY := atf.Position.Y + acol.Offset.Y*atf.Scale.Y
+	aMaxY := aMinY + acol.Height*atf.Scale.Y
+	bMinX := btf.Position.X + bcol.Offset.X*btf.Scale.X
+	bMaxX := bMinX + bcol.Width*btf.Scale.X
+	bMinY := btf.Position.Y + bcol.Offset.Y*btf.Scale.Y
+	bMaxY := bMinY + bcol.Height*btf.Scale.Y
+	return aMinX < bMaxX && aMaxX > bMinX && aMinY < bMaxY && aMaxY > bMinY
+}
+
+type RenderCollisionSystem struct {
+	*ecs.BaseSystem
+	renderer *sdl.Renderer
+}
+
+func NewRenderCollisionSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer) *RenderCollisionSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(int(TRANSFORM_COMPONENT))
+	bs.Set(int(BOX_COLLIDER_COMPONENT))
+	return &RenderCollisionSystem{
+		BaseSystem: ecs.NewBaseSystem("RenderCollisionSystem", logger, registry, bs),
+		renderer:   renderer,
+	}
+}
+
+func (s RenderCollisionSystem) GetName() string {
+	return s.Name
+}
+
+func (s *RenderCollisionSystem) Update(dt float32) {
+	for _, entity := range s.GetSystemEntities() {
+		tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
+		col := s.Registry.GetComponentPtr(entity, BOX_COLLIDER_COMPONENT).(*BoxColliderComponent)
+		rect := sdl.Rect{
+			X: int32(tf.Position.X + col.Offset.X),
+			Y: int32(tf.Position.Y + col.Offset.Y),
+			W: int32(tf.Scale.X * col.Width),
+			H: int32(tf.Scale.Y * col.Height),
+		}
+		s.renderer.SetDrawColor(255, 0, 0, 255)
+		s.renderer.DrawRect(&rect)
 	}
 }

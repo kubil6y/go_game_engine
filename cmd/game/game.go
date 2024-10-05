@@ -94,23 +94,33 @@ func (g *Game) LoadLevel() {
 	tank := g.registry.CreateEntity()
 	g.registry.AddComponent(tank, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(tank, TRANSFORM_COMPONENT, TransformComponent{
-		Position: vector.Vec2{X: 300, Y: 300},
+		Position: vector.Vec2{X: 100, Y: 200},
 		Scale:    vector.Vec2{X: 1, Y: 1},
 		Rotation: 0,
 	})
 	g.registry.AddComponent(tank, RIGIDBODY_COMPONENT, RigidbodyComponent{
-		Velocity: vector.Vec2{X: -30, Y: 0},
+		Velocity: vector.Vec2{X: 30, Y: 0},
+	})
+	g.registry.AddComponent(tank, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
+		Width:  32,
+		Height: 32,
+		Offset: vector.NewZeroVec2(),
 	})
 
 	tank2 := g.registry.CreateEntity()
 	g.registry.AddComponent(tank2, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(tank2, TRANSFORM_COMPONENT, TransformComponent{
-		Position: vector.Vec2{X: 150, Y: 150},
+		Position: vector.Vec2{X: 400, Y: 200},
 		Scale:    vector.Vec2{X: 1, Y: 1},
 		Rotation: 0,
 	})
 	g.registry.AddComponent(tank2, RIGIDBODY_COMPONENT, RigidbodyComponent{
-		Velocity: vector.Vec2{X: 30, Y: 0},
+		Velocity: vector.Vec2{X: -30, Y: 0},
+	})
+	g.registry.AddComponent(tank2, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
+		Width:  32,
+		Height: 32,
+		Offset: vector.NewZeroVec2(),
 	})
 
 	chopper := g.registry.CreateEntity()
@@ -121,16 +131,25 @@ func (g *Game) LoadLevel() {
 		Scale:    vector.Vec2{X: 1, Y: 1},
 		Rotation: 0,
 	})
+	// g.registry.AddComponent(chopper, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
+	// 	Width:  32,
+	// 	Height: 32,
+	// 	Offset: vector.NewZeroVec2(),
+	// })
 
 	// Create systems
 	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
 	movementSystem := NewMovementSystem(g.logger, &g.registry)
 	animationSystem := NewAnimationSystem(g.logger, &g.registry)
+	collisionSystem := NewCollisionSystem(g.logger, &g.registry)
+	renderCollisionSystem := NewRenderCollisionSystem(g.logger, &g.registry, g.renderer)
 
 	// Register systems
-	g.registry.AddSystem(MOVEMENT_SYSTEM, movementSystem)
 	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
+	g.registry.AddSystem(MOVEMENT_SYSTEM, movementSystem)
 	g.registry.AddSystem(ANIMATION_SYSTEM, animationSystem)
+	g.registry.AddSystem(COLLISION_SYSTEM, collisionSystem)
+	g.registry.AddSystem(RENDER_COLLISION_SYSTEM, renderCollisionSystem)
 }
 
 func (g *Game) Run() {
@@ -150,12 +169,15 @@ func (g *Game) ProcessInput() {
 			g.running = false
 			break
 		case *sdl.KeyboardEvent:
-			if t.State == sdl.RELEASED {
+			if t.State == sdl.PRESSED {
+                // TODO emit event here
 				switch t.Keysym.Sym {
 				case sdl.K_ESCAPE:
 					g.logger.Debug("Quitting with escape", nil)
 					g.running = false
 					break
+                case sdl.K_o:
+                    g.debug = !g.debug
 				}
 			}
 			break
@@ -174,9 +196,11 @@ func (g *Game) Update() {
 	g.registry.Update()
 
 	movementSystem := g.registry.GetSystem(MOVEMENT_SYSTEM).(*MovementSystem)
-	movementSystem.Update(dt)
 	animationSystem := g.registry.GetSystem(ANIMATION_SYSTEM).(*AnimationSystem)
+	collisionSystem := g.registry.GetSystem(COLLISION_SYSTEM).(*CollisionSystem)
+	movementSystem.Update(dt)
 	animationSystem.Update(dt)
+	collisionSystem.Update(dt)
 }
 
 func (g *Game) Render() {
@@ -184,7 +208,12 @@ func (g *Game) Render() {
 	g.renderer.Clear()
 
 	renderSystem := g.registry.GetSystem(RENDER_SYSTEM).(*RenderSystem)
+	renderCollisionSystem := g.registry.GetSystem(RENDER_COLLISION_SYSTEM).(*RenderCollisionSystem)
+
 	renderSystem.Update(0)
+    if g.debug {
+        renderCollisionSystem.Update(0)
+    }
 
 	g.renderer.Present()
 }

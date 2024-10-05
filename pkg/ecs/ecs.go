@@ -149,7 +149,6 @@ func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, comp
 	return nil
 }
 
-// Helper function to find the maximum of two integers
 func max(a, b int) int {
 	if a > b {
 		return a

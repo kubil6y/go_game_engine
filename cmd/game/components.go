@@ -69,8 +69,8 @@ func (c TransformComponent) String() string {
 }
 
 type BoxColliderComponent struct {
-	Width  int
-	Height int
+	Width  float32
+	Height float32
 	Offset vector.Vec2
 }
 
