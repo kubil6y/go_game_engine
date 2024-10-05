@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/asset_store"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
@@ -19,6 +20,7 @@ const (
 	COLLISION_SYSTEM
 	DAMAGE_SYSTEM
 	KEYBOARD_CONTROL_SYSTEM
+	CAMERA_MOVEMENT_SYSTEM
 )
 
 // RENDER SYSTEM ////////////////////////////////////////////////
@@ -26,9 +28,10 @@ type RenderSystem struct {
 	*ecs.BaseSystem
 	renderer   *sdl.Renderer
 	assetStore *asset_store.AssetStore
+	camera     *sdl.Rect
 }
 
-func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer, assetStore *asset_store.AssetStore) *RenderSystem {
+func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer, assetStore *asset_store.AssetStore, camera *sdl.Rect) *RenderSystem {
 	bs := bitset.NewBitset32()
 	bs.Set(int(SPRITE_COMPONENT))
 	bs.Set(int(TRANSFORM_COMPONENT))
@@ -37,6 +40,7 @@ func NewRenderSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sd
 		BaseSystem: ecs.NewBaseSystem("RenderSystem", logger, registry, bs),
 		renderer:   renderer,
 		assetStore: assetStore,
+		camera:     camera,
 	}
 }
 
@@ -58,9 +62,17 @@ func (s *RenderSystem) Update(dt float32) {
 				continue
 			}
 			tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
+
+			var cameraOffsetX float32
+			var cameraOffsetY float32
+			if !sprite.IsFixed {
+				cameraOffsetX = float32(s.camera.X)
+				cameraOffsetY = float32(s.camera.Y)
+			}
+
 			var dstRect sdl.Rect
-			dstRect.X = int32(tf.Position.X)
-			dstRect.Y = int32(tf.Position.Y)
+			dstRect.X = int32(tf.Position.X - cameraOffsetX)
+			dstRect.Y = int32(tf.Position.Y - cameraOffsetY)
 			dstRect.W = int32(sprite.Width * int(tf.Scale.X))
 			dstRect.H = int32(sprite.Height * int(tf.Scale.Y))
 			s.renderer.CopyEx(s.assetStore.GetTexture(sprite.AssetID), &sprite.SrcRect, &dstRect, 0, nil, sdl.FLIP_NONE)
@@ -72,8 +84,6 @@ func (s *RenderSystem) Update(dt float32) {
 // MOVEMENT SYSTEM ////////////////////////////////////////////////
 type MovementSystem struct {
 	*ecs.BaseSystem
-	renderer   *sdl.Renderer
-	assetStore *asset_store.AssetStore
 }
 
 func NewMovementSystem(logger *logger.Logger, registry *ecs.Registry) *MovementSystem {
@@ -191,15 +201,17 @@ func CheckAABB(atf, btf *TransformComponent, acol, bcol *BoxColliderComponent) b
 type RenderCollisionSystem struct {
 	*ecs.BaseSystem
 	renderer *sdl.Renderer
+	camera   *sdl.Rect
 }
 
-func NewRenderCollisionSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer) *RenderCollisionSystem {
+func NewRenderCollisionSystem(logger *logger.Logger, registry *ecs.Registry, renderer *sdl.Renderer, camera *sdl.Rect) *RenderCollisionSystem {
 	bs := bitset.NewBitset32()
 	bs.Set(int(TRANSFORM_COMPONENT))
 	bs.Set(int(BOX_COLLIDER_COMPONENT))
 	return &RenderCollisionSystem{
 		BaseSystem: ecs.NewBaseSystem("RenderCollisionSystem", logger, registry, bs),
 		renderer:   renderer,
+		camera:     camera,
 	}
 }
 
@@ -212,8 +224,8 @@ func (s *RenderCollisionSystem) Update(dt float32) {
 		tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
 		col := s.Registry.GetComponentPtr(entity, BOX_COLLIDER_COMPONENT).(*BoxColliderComponent)
 		rect := sdl.Rect{
-			X: int32(tf.Position.X + col.Offset.X),
-			Y: int32(tf.Position.Y + col.Offset.Y),
+			X: int32(tf.Position.X + col.Offset.X - float32(s.camera.X)),
+			Y: int32(tf.Position.Y + col.Offset.Y - float32(s.camera.Y)),
 			W: int32(tf.Scale.X * col.Width),
 			H: int32(tf.Scale.Y * col.Height),
 		}
@@ -309,5 +321,45 @@ func (s *KeyboardControlSystem) OnKeydown(payload any) {
 			rb.Velocity = keyboard.leftVelocity
 			sprite.SrcRect.Y = int32(sprite.Height * 3)
 		}
+	}
+}
+
+// CAMERA MOVEMENT SYSTEM ////////////////////////////////////////////////
+type CameraMovementSystem struct {
+	*ecs.BaseSystem
+	camera    *sdl.Rect
+	mapWidth  *float32
+	mapHeight *float32
+}
+
+func NewCameraMovementSystem(logger *logger.Logger, registry *ecs.Registry, camera *sdl.Rect, mapWidth, mapHeight *float32) *CameraMovementSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(int(TRANSFORM_COMPONENT))
+	bs.Set(int(CAMERA_FOLLOW_COMPONENT))
+	return &CameraMovementSystem{
+		BaseSystem: ecs.NewBaseSystem("CameraMovementSystem", logger, registry, bs),
+		camera:     camera,
+		mapWidth:   mapWidth,
+		mapHeight:  mapHeight,
+	}
+}
+
+func (s CameraMovementSystem) GetName() string {
+	return s.Name
+}
+
+func (s *CameraMovementSystem) Update(dt float32) {
+	for _, entity := range s.GetSystemEntities() {
+		tf := s.Registry.GetComponentPtr(entity, TRANSFORM_COMPONENT).(*TransformComponent)
+		if tf.Position.X+float32(s.camera.W)/2 < *s.mapWidth {
+			s.camera.X = int32(tf.Position.X) - WIDTH/2
+		}
+
+		if tf.Position.Y+float32(s.camera.H)/2 < *s.mapHeight {
+			s.camera.Y = int32(tf.Position.Y) - HEIGHT/2
+		}
+
+		s.camera.X = utils.Clamp(s.camera.X, 0, s.camera.W)
+		s.camera.Y = utils.Clamp(s.camera.Y, 0, s.camera.H)
 	}
 }

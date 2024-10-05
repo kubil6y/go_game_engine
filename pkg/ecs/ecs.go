@@ -6,13 +6,10 @@ import (
 	"math"
 	"reflect"
 
+	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/bitset"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
 )
-
-// NOTE:
-// - Claude.AI helped a lot with reflect stuff lul
-// - Resizing slices +1 is the original code im just converting to cpp to go
 
 type SystemTypeID int
 type ComponentTypeID int
@@ -120,14 +117,14 @@ func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, comp
 
 	// Check if the component pool exists, if not, create it
 	if _, exists := r.componentPools[componentID]; !exists {
-		initialCapacity := max(r.numEntities, 8) // Start with at least 8 elements
+		initialCapacity := utils.Max(r.numEntities, 8) // Start with at least 8 elements
 		r.componentPools[componentID] = reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(component)), 0, initialCapacity).Interface()
 	}
 
 	// Get the component pool and ensure it's large enough
 	pool := reflect.ValueOf(r.componentPools[componentID])
 	if entityID >= pool.Cap() {
-		newCapacity := max(entityID+1, int(math.Ceil(float64(pool.Cap())*1.5)))
+		newCapacity := utils.Max(entityID+1, int(math.Ceil(float64(pool.Cap())*1.5)))
 		newPool := reflect.MakeSlice(pool.Type(), pool.Len(), newCapacity)
 		reflect.Copy(newPool, pool)
 		pool = newPool
@@ -147,13 +144,6 @@ func (r *Registry) AddComponent(entity Entity, componentID ComponentTypeID, comp
 	r.entityComponentSignatures[entityID].Set(int(componentID))
 
 	return nil
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 func (r *Registry) RemoveComponent(entity Entity, componentID ComponentTypeID) {
@@ -206,9 +196,9 @@ func (r *Registry) Update() {
 	r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
 
 	for _, entity := range r.entitiesToBeKilled {
-        r.RemoveEntityFromSystems(entity)
-        r.entityComponentSignatures[entity.GetID()].Reset()
-        r.freeIDs.PushFront(entity.GetID())
+		r.RemoveEntityFromSystems(entity)
+		r.entityComponentSignatures[entity.GetID()].Reset()
+		r.freeIDs.PushFront(entity.GetID())
 	}
 	r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
 }

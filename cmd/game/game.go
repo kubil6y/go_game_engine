@@ -26,6 +26,9 @@ type Game struct {
 	msPrevFrame  uint32
 	windowWidth  int32
 	windowHeight int32
+	mapWidth     float32
+	mapHeight    float32
+	camera       sdl.Rect
 	window       *sdl.Window
 	renderer     *sdl.Renderer
 	logger       *logger.Logger
@@ -79,6 +82,13 @@ func (g *Game) Initialize() error {
 		g.logger.Error(err, "failed to set logical size", nil)
 		return err
 	}
+	// init camera size
+	g.camera = sdl.Rect{
+		X: 0,
+		Y: 0,
+		W: WIDTH,
+		H: HEIGHT,
+	}
 	g.running = true
 	return nil
 }
@@ -93,6 +103,7 @@ func (g *Game) LoadLevel() {
 	}
 
 	chopper := g.registry.CreateEntity()
+	g.registry.AddComponent(chopper, CAMERA_FOLLOW_COMPONENT, CameraFollowComponent{})
 	g.registry.AddComponent(chopper, SPRITE_COMPONENT, NewSpriteComponent(IMG_Chopper, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(chopper, ANIMATION_COMPONENT, NewAnimationComponent(2, 10, true))
 	g.registry.AddComponent(chopper, TRANSFORM_COMPONENT, TransformComponent{
@@ -109,10 +120,10 @@ func (g *Game) LoadLevel() {
 		Velocity: vector.NewZeroVec2(),
 	})
 	g.registry.AddComponent(chopper, KEYBOARD_CONTROLLED_COMPONENT, KeyboardControlledComponent{
-		upVelocity:    vector.Vec2{X: 0, Y: -50},
-		downVelocity:  vector.Vec2{X: 0, Y: 50},
-		leftVelocity:  vector.Vec2{X: -50, Y: 0},
-		rightVelocity: vector.Vec2{X: 50, Y: 0},
+		upVelocity:    vector.Vec2{X: 0, Y: -120},
+		downVelocity:  vector.Vec2{X: 0, Y: 120},
+		leftVelocity:  vector.Vec2{X: -120, Y: 0},
+		rightVelocity: vector.Vec2{X: 120, Y: 0},
 	})
 
 	tank := g.registry.CreateEntity()
@@ -148,13 +159,14 @@ func (g *Game) LoadLevel() {
 	})
 
 	// Create systems
-	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
+	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore, &g.camera)
 	movementSystem := NewMovementSystem(g.logger, &g.registry)
 	animationSystem := NewAnimationSystem(g.logger, &g.registry)
 	collisionSystem := NewCollisionSystem(g.logger, &g.registry, g.events)
-	renderCollisionSystem := NewRenderCollisionSystem(g.logger, &g.registry, g.renderer)
+	renderCollisionSystem := NewRenderCollisionSystem(g.logger, &g.registry, g.renderer, &g.camera)
 	damageSystem := NewDamageSystem(g.logger, &g.registry, g.events)
 	keyboardControlSystem := NewKeyboardControlSystem(g.logger, &g.registry, g.events)
+	cameraMovementSystem := NewCameraMovementSystem(g.logger, &g.registry, &g.camera, &g.mapWidth, &g.mapHeight)
 
 	// Register systems
 	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
@@ -164,6 +176,7 @@ func (g *Game) LoadLevel() {
 	g.registry.AddSystem(RENDER_COLLISION_SYSTEM, renderCollisionSystem)
 	g.registry.AddSystem(DAMAGE_SYSTEM, damageSystem)
 	g.registry.AddSystem(KEYBOARD_CONTROL_SYSTEM, keyboardControlSystem)
+	g.registry.AddSystem(CAMERA_MOVEMENT_SYSTEM, cameraMovementSystem)
 
 	// Subscribe to events
 	g.registry.GetSystem(DAMAGE_SYSTEM).SubscribeToEvents()
@@ -219,9 +232,11 @@ func (g *Game) Update() {
 	movementSystem := g.registry.GetSystem(MOVEMENT_SYSTEM).(*MovementSystem)
 	animationSystem := g.registry.GetSystem(ANIMATION_SYSTEM).(*AnimationSystem)
 	collisionSystem := g.registry.GetSystem(COLLISION_SYSTEM).(*CollisionSystem)
+	cameraMovementSystem := g.registry.GetSystem(CAMERA_MOVEMENT_SYSTEM).(*CameraMovementSystem)
 	movementSystem.Update(dt)
 	animationSystem.Update(dt)
 	collisionSystem.Update(dt)
+	cameraMovementSystem.Update(dt)
 }
 
 func (g *Game) Render() {

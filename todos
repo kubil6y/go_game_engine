@@ -3,7 +3,7 @@
 [X] animations
 [X] debug rendering (after keyboard input)
 [X] entity.Kill()
-[ ] make chopper move!
-[ ] add key input events (debug)
-[ ] camera
-
+[X] make chopper move!
+[X] add key input events (debug)
+[x] camera
+[ ] projectile system

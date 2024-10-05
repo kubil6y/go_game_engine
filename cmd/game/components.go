@@ -14,6 +14,7 @@ const (
 	RIGIDBODY_COMPONENT
 	ANIMATION_COMPONENT
 	KEYBOARD_CONTROLLED_COMPONENT
+	CAMERA_FOLLOW_COMPONENT
 )
 
 const (
@@ -143,4 +144,15 @@ func (c KeyboardControlledComponent) GetID() int {
 
 func (c KeyboardControlledComponent) String() string {
 	return "KeyboardControlledComponent"
+}
+
+// ////////////////////////////////////////////////
+type CameraFollowComponent struct{}
+
+func (c CameraFollowComponent) GetID() int {
+	return int(CAMERA_FOLLOW_COMPONENT)
+}
+
+func (c CameraFollowComponent) String() string {
+	return "CameraFollowComponent"
 }

@@ -73,5 +73,8 @@ func (g *Game) LoadAssets() error {
 		}
 	}
 
+	g.mapWidth = mapNumCols * tileSize * tileScale
+	g.mapHeight = mapNumRows * tileSize * tileScale
+
 	return nil
 }
