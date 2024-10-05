@@ -2,7 +2,7 @@
 
 [X] animations
 [X] debug rendering (after keyboard input)
-[ ] entity.Kill()
+[X] entity.Kill()
 [ ] make chopper move!
 [ ] add key input events (debug)
 [ ] camera

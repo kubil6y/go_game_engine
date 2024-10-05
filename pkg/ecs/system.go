@@ -14,6 +14,7 @@ type System interface {
 	GetSystemEntities() []Entity
 	GetSignature() *bitset.Bitset32
 	Update(dt float32)
+    SubscribeToEvents()
 }
 
 type BaseSystem struct {
@@ -37,6 +38,11 @@ func NewBaseSystem(name string, logger *logger.Logger, registry *Registry, bitse
 func (s *BaseSystem) Update(dt float32) {
 	// This method is meant to be overridden by derived systems
 	s.Logger.Debug(fmt.Sprintf("Update method not implemented for %s", s.Name), nil)
+}
+
+func (s *BaseSystem) SubscribeToEvents() {
+	// This method is meant to be overridden by derived systems
+	s.Logger.Debug(fmt.Sprintf("SubscribeToEvents method not implemented for %s", s.Name), nil)
 }
 
 func (s *BaseSystem) AddEntityToSystem(entity Entity) {

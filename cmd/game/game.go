@@ -43,6 +43,7 @@ func NewGame() *Game {
 		registry:     *ecs.NewRegistry(MAX_COMPONENTS_AMOUNT, logger),
 		assetStore:   asset_store.New(),
 		events:       eventbus.NewEventBus(),
+		debug:        true,
 	}
 }
 
@@ -91,6 +92,29 @@ func (g *Game) LoadLevel() {
 		g.logger.Fatal(err, fmt.Sprintf("failed to load assets"), nil)
 	}
 
+	chopper := g.registry.CreateEntity()
+	g.registry.AddComponent(chopper, SPRITE_COMPONENT, NewSpriteComponent(IMG_Chopper, 32, 32, 1, false, 0, 0))
+	g.registry.AddComponent(chopper, ANIMATION_COMPONENT, NewAnimationComponent(2, 10, true))
+	g.registry.AddComponent(chopper, TRANSFORM_COMPONENT, TransformComponent{
+		Position: vector.Vec2{X: 50, Y: 50},
+		Scale:    vector.Vec2{X: 1, Y: 1},
+		Rotation: 0,
+	})
+	g.registry.AddComponent(chopper, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
+		Width:  32,
+		Height: 32,
+		Offset: vector.NewZeroVec2(),
+	})
+	g.registry.AddComponent(chopper, RIGIDBODY_COMPONENT, RigidbodyComponent{
+		Velocity: vector.NewZeroVec2(),
+	})
+	g.registry.AddComponent(chopper, KEYBOARD_CONTROLLED_COMPONENT, KeyboardControlledComponent{
+		upVelocity:    vector.Vec2{X: 0, Y: -50},
+		downVelocity:  vector.Vec2{X: 0, Y: 50},
+		leftVelocity:  vector.Vec2{X: -50, Y: 0},
+		rightVelocity: vector.Vec2{X: 50, Y: 0},
+	})
+
 	tank := g.registry.CreateEntity()
 	g.registry.AddComponent(tank, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(tank, TRANSFORM_COMPONENT, TransformComponent{
@@ -123,26 +147,14 @@ func (g *Game) LoadLevel() {
 		Offset: vector.NewZeroVec2(),
 	})
 
-	chopper := g.registry.CreateEntity()
-	g.registry.AddComponent(chopper, SPRITE_COMPONENT, NewSpriteComponent(IMG_Chopper, 32, 32, 1, false, 0, 0))
-	g.registry.AddComponent(chopper, ANIMATION_COMPONENT, NewAnimationComponent(2, 10, true))
-	g.registry.AddComponent(chopper, TRANSFORM_COMPONENT, TransformComponent{
-		Position: vector.Vec2{X: 50, Y: 50},
-		Scale:    vector.Vec2{X: 1, Y: 1},
-		Rotation: 0,
-	})
-	// g.registry.AddComponent(chopper, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
-	// 	Width:  32,
-	// 	Height: 32,
-	// 	Offset: vector.NewZeroVec2(),
-	// })
-
 	// Create systems
 	renderSystem := NewRenderSystem(g.logger, &g.registry, g.renderer, g.assetStore)
 	movementSystem := NewMovementSystem(g.logger, &g.registry)
 	animationSystem := NewAnimationSystem(g.logger, &g.registry)
-	collisionSystem := NewCollisionSystem(g.logger, &g.registry)
+	collisionSystem := NewCollisionSystem(g.logger, &g.registry, g.events)
 	renderCollisionSystem := NewRenderCollisionSystem(g.logger, &g.registry, g.renderer)
+	damageSystem := NewDamageSystem(g.logger, &g.registry, g.events)
+	keyboardControlSystem := NewKeyboardControlSystem(g.logger, &g.registry, g.events)
 
 	// Register systems
 	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
@@ -150,6 +162,12 @@ func (g *Game) LoadLevel() {
 	g.registry.AddSystem(ANIMATION_SYSTEM, animationSystem)
 	g.registry.AddSystem(COLLISION_SYSTEM, collisionSystem)
 	g.registry.AddSystem(RENDER_COLLISION_SYSTEM, renderCollisionSystem)
+	g.registry.AddSystem(DAMAGE_SYSTEM, damageSystem)
+	g.registry.AddSystem(KEYBOARD_CONTROL_SYSTEM, keyboardControlSystem)
+
+	// Subscribe to events
+	g.registry.GetSystem(DAMAGE_SYSTEM).SubscribeToEvents()
+	g.registry.GetSystem(KEYBOARD_CONTROL_SYSTEM).SubscribeToEvents()
 }
 
 func (g *Game) Run() {
@@ -170,14 +188,17 @@ func (g *Game) ProcessInput() {
 			break
 		case *sdl.KeyboardEvent:
 			if t.State == sdl.PRESSED {
-                // TODO emit event here
+				g.events.Emit(KEYDOWN_EVENT, KeydownEvent{
+					Keysym: t.Keysym,
+				})
+
 				switch t.Keysym.Sym {
 				case sdl.K_ESCAPE:
 					g.logger.Debug("Quitting with escape", nil)
 					g.running = false
 					break
-                case sdl.K_o:
-                    g.debug = !g.debug
+				case sdl.K_o:
+					g.debug = !g.debug
 				}
 			}
 			break
@@ -211,9 +232,9 @@ func (g *Game) Render() {
 	renderCollisionSystem := g.registry.GetSystem(RENDER_COLLISION_SYSTEM).(*RenderCollisionSystem)
 
 	renderSystem.Update(0)
-    if g.debug {
-        renderCollisionSystem.Update(0)
-    }
+	if g.debug {
+		renderCollisionSystem.Update(0)
+	}
 
 	g.renderer.Present()
 }
