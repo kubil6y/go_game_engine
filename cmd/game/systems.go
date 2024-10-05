@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/kubil6y/go_game_engine/internal/utils"
 	"github.com/kubil6y/go_game_engine/pkg/asset_store"
@@ -9,6 +11,7 @@ import (
 	"github.com/kubil6y/go_game_engine/pkg/ecs"
 	"github.com/kubil6y/go_game_engine/pkg/eventbus"
 	"github.com/kubil6y/go_game_engine/pkg/logger"
+	"github.com/kubil6y/go_game_engine/pkg/vector"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -21,6 +24,7 @@ const (
 	DAMAGE_SYSTEM
 	KEYBOARD_CONTROL_SYSTEM
 	CAMERA_MOVEMENT_SYSTEM
+	TANK_SPAWNER_SYSTEM
 )
 
 // RENDER SYSTEM ////////////////////////////////////////////////
@@ -362,4 +366,66 @@ func (s *CameraMovementSystem) Update(dt float32) {
 		s.camera.X = utils.Clamp(s.camera.X, 0, s.camera.W)
 		s.camera.Y = utils.Clamp(s.camera.Y, 0, s.camera.H)
 	}
+}
+
+// TANK SPAWNER SYSTEM ////////////////////////////////////////////////
+type TankSpawnerSystem struct {
+	*ecs.BaseSystem
+	camera      *sdl.Rect
+	spawnTimers map[int]time.Time
+}
+
+func NewTankSpawnerSystem(logger *logger.Logger, registry *ecs.Registry, camera *sdl.Rect) *TankSpawnerSystem {
+	bs := bitset.NewBitset32()
+	bs.Set(int(TANK_SPAWNER_COMPONENT))
+	return &TankSpawnerSystem{
+		BaseSystem:  ecs.NewBaseSystem("TankSpawnerSystem", logger, registry, bs),
+		spawnTimers: make(map[int]time.Time),
+		camera:      camera,
+	}
+}
+
+func (s TankSpawnerSystem) GetName() string {
+	return s.Name
+}
+
+func (s *TankSpawnerSystem) Update(dt float32) {
+	spawnTank := func(spawnPos vector.Vec2) {
+		newTank := s.Registry.CreateEntity()
+		s.Registry.AddComponent(newTank, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
+		s.Registry.AddComponent(newTank, TRANSFORM_COMPONENT, TransformComponent{
+			Position: spawnPos,
+			Scale:    vector.Vec2{X: 1, Y: 1},
+			Rotation: 0,
+		})
+		velocityX := float32(rand.Intn(50)+25) * -1
+		s.Registry.AddComponent(newTank, RIGIDBODY_COMPONENT, RigidbodyComponent{
+			Velocity: vector.Vec2{X: velocityX, Y: 0},
+		})
+		s.Registry.AddComponent(newTank, BOX_COLLIDER_COMPONENT, BoxColliderComponent{
+			Width:  32,
+			Height: 32,
+			Offset: vector.NewZeroVec2(),
+		})
+	}
+
+	for _, entity := range s.GetSystemEntities() {
+		lastSpawnTime, exists := s.spawnTimers[entity.GetID()]
+		spawnPos := vector.Vec2{
+			X: float32(s.camera.X + s.camera.W + int32(rand.Intn(50))),
+			Y: float32(rand.Intn(int(s.camera.H)) + int(s.camera.Y)),
+		}
+		if !exists {
+			s.spawnTimers[entity.GetID()] = time.Now()
+			spawnTank(spawnPos)
+			continue
+		} else {
+			spawnBetween := float64(rand.Intn(5) + 2)
+			if time.Since(lastSpawnTime).Seconds() > spawnBetween {
+				s.spawnTimers[entity.GetID()] = time.Now()
+				spawnTank(spawnPos)
+			}
+		}
+	}
+
 }

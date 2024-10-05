@@ -15,13 +15,14 @@ const (
 	ANIMATION_COMPONENT
 	KEYBOARD_CONTROLLED_COMPONENT
 	CAMERA_FOLLOW_COMPONENT
+    TANK_SPAWNER_COMPONENT
 )
 
 const (
 	MAX_COMPONENTS_AMOUNT = 32
 )
 
-// ////////////////////////////////////////////////
+///////////////////////////////////////////////////
 type SpriteComponent struct {
 	Name    string
 	AssetID asset_store.AssetID
@@ -57,7 +58,7 @@ func (c SpriteComponent) String() string {
 	return "SpriteComponent"
 }
 
-// ////////////////////////////////////////////////
+///////////////////////////////////////////////////
 type TransformComponent struct {
 	Position vector.Vec2
 	Scale    vector.Vec2
@@ -72,7 +73,7 @@ func (c TransformComponent) String() string {
 	return "TransformComponent"
 }
 
-// ////////////////////////////////////////////////
+///////////////////////////////////////////////////
 type BoxColliderComponent struct {
 	Width  float32
 	Height float32
@@ -87,7 +88,7 @@ func (c BoxColliderComponent) String() string {
 	return "BoxColliderComponent"
 }
 
-// ////////////////////////////////////////////////
+///////////////////////////////////////////////////
 type RigidbodyComponent struct {
 	Velocity vector.Vec2
 }
@@ -100,7 +101,7 @@ func (c RigidbodyComponent) String() string {
 	return "RigidBodyComponent"
 }
 
-// ////////////////////////////////////////////////
+///////////////////////////////////////////////////
 type AnimationComponent struct {
 	numFrames      int
 	currentFrame   int
@@ -130,7 +131,7 @@ func (c AnimationComponent) String() string {
 	return "AnimationComponent"
 }
 
-// ////////////////////////////////////////////////
+//////////////////////////////////////////////////
 type KeyboardControlledComponent struct {
 	upVelocity    vector.Vec2
 	downVelocity  vector.Vec2
@@ -146,7 +147,7 @@ func (c KeyboardControlledComponent) String() string {
 	return "KeyboardControlledComponent"
 }
 
-// ////////////////////////////////////////////////
+//////////////////////////////////////////////////
 type CameraFollowComponent struct{}
 
 func (c CameraFollowComponent) GetID() int {
@@ -155,4 +156,15 @@ func (c CameraFollowComponent) GetID() int {
 
 func (c CameraFollowComponent) String() string {
 	return "CameraFollowComponent"
+}
+
+//////////////////////////////////////////////////
+type TankSpawnerComponent struct{}
+
+func (c TankSpawnerComponent) GetID() int {
+	return int(TANK_SPAWNER_COMPONENT)
+}
+
+func (c TankSpawnerComponent) String() string {
+	return "TankSpawnerComponent"
 }

@@ -126,6 +126,9 @@ func (g *Game) LoadLevel() {
 		rightVelocity: vector.Vec2{X: 120, Y: 0},
 	})
 
+	tankSpawner := g.registry.CreateEntity()
+	g.registry.AddComponent(tankSpawner, TANK_SPAWNER_COMPONENT, TankSpawnerComponent{})
+
 	tank := g.registry.CreateEntity()
 	g.registry.AddComponent(tank, SPRITE_COMPONENT, NewSpriteComponent(IMG_Tank, 32, 32, 1, false, 0, 0))
 	g.registry.AddComponent(tank, TRANSFORM_COMPONENT, TransformComponent{
@@ -167,6 +170,7 @@ func (g *Game) LoadLevel() {
 	damageSystem := NewDamageSystem(g.logger, &g.registry, g.events)
 	keyboardControlSystem := NewKeyboardControlSystem(g.logger, &g.registry, g.events)
 	cameraMovementSystem := NewCameraMovementSystem(g.logger, &g.registry, &g.camera, &g.mapWidth, &g.mapHeight)
+	tankSpawnerSystem := NewTankSpawnerSystem(g.logger, &g.registry, &g.camera)
 
 	// Register systems
 	g.registry.AddSystem(RENDER_SYSTEM, renderSystem)
@@ -177,6 +181,7 @@ func (g *Game) LoadLevel() {
 	g.registry.AddSystem(DAMAGE_SYSTEM, damageSystem)
 	g.registry.AddSystem(KEYBOARD_CONTROL_SYSTEM, keyboardControlSystem)
 	g.registry.AddSystem(CAMERA_MOVEMENT_SYSTEM, cameraMovementSystem)
+	g.registry.AddSystem(TANK_SPAWNER_SYSTEM, tankSpawnerSystem)
 
 	// Subscribe to events
 	g.registry.GetSystem(DAMAGE_SYSTEM).SubscribeToEvents()
@@ -233,10 +238,13 @@ func (g *Game) Update() {
 	animationSystem := g.registry.GetSystem(ANIMATION_SYSTEM).(*AnimationSystem)
 	collisionSystem := g.registry.GetSystem(COLLISION_SYSTEM).(*CollisionSystem)
 	cameraMovementSystem := g.registry.GetSystem(CAMERA_MOVEMENT_SYSTEM).(*CameraMovementSystem)
+	tankSpawnerSystem := g.registry.GetSystem(TANK_SPAWNER_SYSTEM).(*TankSpawnerSystem)
+
 	movementSystem.Update(dt)
 	animationSystem.Update(dt)
 	collisionSystem.Update(dt)
 	cameraMovementSystem.Update(dt)
+	tankSpawnerSystem.Update(dt)
 }
 
 func (g *Game) Render() {

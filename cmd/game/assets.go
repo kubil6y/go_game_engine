@@ -24,7 +24,7 @@ const (
 
 func (g *Game) LoadAssets() error {
 	g.assetStore.AddTexture(g.renderer, IMG_Tilemap, "./assets/tilemaps/jungle.png")
-	g.assetStore.AddTexture(g.renderer, IMG_Tank, "./assets/images/tank-panther-right.png")
+	g.assetStore.AddTexture(g.renderer, IMG_Tank, "./assets/images/tank-panther-left.png")
 	g.assetStore.AddTexture(g.renderer, IMG_Chopper, "./assets/images/chopper-spritesheet.png")
 
 	// render the map
