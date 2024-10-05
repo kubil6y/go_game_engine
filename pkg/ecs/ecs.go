@@ -206,7 +206,9 @@ func (r *Registry) Update() {
 	r.entitiesToBeAdded = r.entitiesToBeAdded[:0]
 
 	for _, entity := range r.entitiesToBeKilled {
-		fmt.Printf("TODO entitiesToBeKilled: %d\n", entity.GetID())
+        r.RemoveEntityFromSystems(entity)
+        r.entityComponentSignatures[entity.GetID()].Reset()
+        r.freeIDs.PushFront(entity.GetID())
 	}
 	r.entitiesToBeKilled = r.entitiesToBeKilled[:0]
 }
@@ -223,6 +225,5 @@ func (r *Registry) AddEntityToSystems(entity Entity) {
 func (r *Registry) RemoveEntityFromSystems(entity Entity) {
 	for _, system := range r.systems {
 		system.RemoveEntityFromSystem(entity)
-		r.logger.Debug(fmt.Sprintf("Entity{%d} %d is removed from %s", entity.GetID(), system.GetName()), nil)
 	}
 }

@@ -155,6 +155,8 @@ func (s *CollisionSystem) Update(dt float32) {
 			btf := s.Registry.GetComponentPtr(b, TRANSFORM_COMPONENT).(*TransformComponent)
 			bcol := s.Registry.GetComponentPtr(b, BOX_COLLIDER_COMPONENT).(*BoxColliderComponent)
 			if CheckAABB(atf, btf, acol, bcol) {
+                s.Registry.KillEntity(a)
+                s.Registry.KillEntity(b)
 				s.Logger.Info(fmt.Sprintf("entity=%d and entity=%d is colliding", a.GetID(), b.GetID()), nil)
 			}
 		}
